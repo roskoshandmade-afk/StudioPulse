@@ -1,4 +1,4 @@
-name: Deploy LIMUR STUDIO OS to GitHub Pages
+name: Deploy Studio Pulse to GitHub Pages
 
 on:
   push:
