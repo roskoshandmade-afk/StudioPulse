@@ -582,11 +582,15 @@ export default function App() {
       if (urlClientState.projectId) {
         const matched = data.projects.find((p) => p.id === urlClientState.projectId);
         if (matched) return matched;
+        if (urlClientState.snapshot) {
+          return urlClientState.snapshot;
+        }
+        return null;
       }
       if (urlClientState.snapshot) {
         return urlClientState.snapshot;
       }
-      return null;
+      return data.projects[0] || null;
     }
     if (selectedProject) return selectedProject;
     return data.projects[0] || null;

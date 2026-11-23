@@ -288,21 +288,38 @@ export function parseClientUrlParams(): {
   snapshot: ClientSnapshot | null;
 } {
   try {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-    const projectId = params.get('project');
+    const searchParams = new URLSearchParams(window.location.search);
+
+    // Also support query parameters placed inside hash routes (e.g. /StudioPulse/#/?mode=client)
+    const rawHash = window.location.hash || '';
+    const hashQueryIndex = rawHash.indexOf('?');
+    const hashParams =
+      hashQueryIndex !== -1 && !rawHash.startsWith('#snapshot=')
+        ? new URLSearchParams(rawHash.slice(hashQueryIndex + 1))
+        : null;
+
+    const readParam = (key: string): string | null =>
+      searchParams.get(key) ?? hashParams?.get(key) ?? null;
+
+    const view = (readParam('view') || '').trim().toLowerCase();
+    const mode = (readParam('mode') || '').trim().toLowerCase();
+    const projectId = readParam('project');
     let snapshot: ClientSnapshot | null = null;
 
-    if (window.location.hash.startsWith('#snapshot=')) {
-      const encoded = window.location.hash.slice('#snapshot='.length);
-      const parsed = JSON.parse(decodeBase64Utf8(encoded)) as ClientSnapshot;
-      if (parsed && parsed.id && parsed.name) {
-        snapshot = parsed;
+    const snapshotMarker = 'snapshot=';
+    const snapshotIdx = rawHash.indexOf(snapshotMarker);
+    if (snapshotIdx !== -1) {
+      const encoded = rawHash.slice(snapshotIdx + snapshotMarker.length).split('&')[0];
+      if (encoded) {
+        const parsed = JSON.parse(decodeBase64Utf8(encoded)) as ClientSnapshot;
+        if (parsed && parsed.id && parsed.name) {
+          snapshot = parsed;
+        }
       }
     }
 
     return {
-      isLockedClient: view === 'client',
+      isLockedClient: view === 'client' || mode === 'client',
       projectId,
       snapshot,
     };

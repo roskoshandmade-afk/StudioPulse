@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 declare const __LIMUR_SUPABASE_URL__: string | undefined;
 declare const __LIMUR_SUPABASE_ANON_KEY__: string | undefined;
 
+export const DEFAULT_SANDBOX_SUPABASE_URL = 'https://vrnyoyezgtbijnwlsflc.supabase.co';
 export const SUPABASE_CONFIG_STORAGE_KEY = 'limur_supabase_config_sandbox_v1';
 
 export type SupabaseConfigSource = 'custom' | 'env' | 'unconfigured';
@@ -69,8 +70,9 @@ export function getBuildSupabaseConfig(): {
 } {
   const rawEnvUrl =
     readNonEmpty(import.meta.env.VITE_SUPABASE_URL) ||
-    readNonEmpty(typeof __LIMUR_SUPABASE_URL__ !== 'undefined' ? __LIMUR_SUPABASE_URL__ : '');
-  const envUrl = normalizeSupabaseUrl(rawEnvUrl);
+    readNonEmpty(typeof __LIMUR_SUPABASE_URL__ !== 'undefined' ? __LIMUR_SUPABASE_URL__ : '') ||
+    DEFAULT_SANDBOX_SUPABASE_URL;
+  const envUrl = normalizeSupabaseUrl(rawEnvUrl) || DEFAULT_SANDBOX_SUPABASE_URL;
   const envKey =
     readNonEmpty(import.meta.env.VITE_SUPABASE_ANON_KEY) ||
     readNonEmpty(
@@ -113,8 +115,8 @@ export function createSupabaseClientForConfig(
     const cleanKey = readNonEmpty(anonKey);
 
     if (!cleanUrl || !cleanKey) {
-      console.error('[LIMUR STUDIO OS][Supabase] Missing Project URL or Anon Key.', {
-        hasUrl: Boolean(cleanUrl),
+      console.warn('[LIMUR STUDIO OS][Supabase] Missing Project URL or Anon Key — running in local offline mode.', {
+        url: cleanUrl || null,
         hasAnonKey: Boolean(cleanKey),
       });
       return null;
