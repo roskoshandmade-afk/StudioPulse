@@ -17,13 +17,13 @@ interface ProjectAnalyticsProps {
   onUpdateProject: (updated: Project) => void;
 }
 
-const ROLE_SHADE_PALETTE = [
-  '#0A0A0A',
-  '#3B3B3B',
-  '#6B6B6B',
-  '#9A9A9A',
-  '#C4C4C4',
-  '#DEDEDE',
+const ROLE_COLOR_PALETTE = [
+  '#0284C7', // saturated azure
+  '#4F46E5', // soft indigo
+  '#0891B2', // architectural cyan
+  '#6366F1', // refined violet-indigo
+  '#D97706', // warm amber-gold
+  '#14B8A6', // soft turquoise
 ];
 
 export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
@@ -54,7 +54,7 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
         label: 'Чистая прибыль студии',
         value: finance.projectedMarginAmount,
         percent: (finance.projectedMarginAmount / baseTotal) * 100,
-        color: '#15803D',
+        color: '#0D9488',
         sublabel: 'Остаток после всех затрат',
       });
     }
@@ -65,7 +65,7 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
         label: item.group,
         value: item.amount,
         percent: (item.amount / baseTotal) * 100,
-        color: ROLE_SHADE_PALETTE[idx % ROLE_SHADE_PALETTE.length],
+        color: ROLE_COLOR_PALETTE[idx % ROLE_COLOR_PALETTE.length],
       });
     });
 
@@ -84,20 +84,23 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
       const plan = plannedBudgets[group] || 0;
       const fact = factMap.get(group) || 0;
       const diff = fact - plan;
+      const usagePct = plan > 0 ? (fact / plan) * 100 : fact > 0 ? 101 : 0;
       const isOver = plan > 0 ? fact > plan : fact > 0;
-      return { group, plan, fact, diff, isOver };
+      const isWarning = !isOver && plan > 0 && usagePct >= 80;
+      return { group, plan, fact, diff, usagePct, isOver, isWarning };
     });
 
-    const maxVal = Math.max(
-      1,
-      ...rows.map((r) => Math.max(r.plan, r.fact))
-    );
+    const maxVal = Math.max(1, ...rows.map((r) => Math.max(r.plan, r.fact)));
 
     const totalPlan = rows.reduce((a, r) => a + r.plan, 0);
     const totalFact = rows.reduce((a, r) => a + r.fact, 0);
 
     return { rows, maxVal, totalPlan, totalFact };
   }, [finance.costBreakdown, plannedBudgets]);
+
+  const fotUsageRatio =
+    finance.fotLimitPercent > 0 ? finance.fotPercentOfContract / finance.fotLimitPercent : 0;
+  const isFotWarning = !finance.isOverFotLimit && fotUsageRatio >= 0.8;
 
   const openPlanEditor = () => {
     const draft: Partial<Record<CostRoleGroup, string>> = {};
@@ -132,26 +135,28 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
 
   return (
     <section aria-label="Экономика объекта и диаграммы" className="space-y-6">
-      {/* Two Premium Architectural Charts */}
+      {/* Two High-Contrast Modern Bento Financial Charts */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         {/* Chart 1: Donut Chart of Project Budget Distribution (Profit + Role Costs) */}
-        <div className="border border-[#0A0A0A] bg-white p-6 xl:col-span-6">
-          <div className="flex items-start justify-between gap-4 border-b border-[#0A0A0A] pb-4">
+        <div className="bento-card p-6 xl:col-span-6">
+          <div className="flex items-start justify-between gap-4 border-b border-[#0EA5E9]/14 pb-4">
             <div>
-              <div className="text-[11px] text-[#525252]">Распределение договора КП</div>
-              <h2 className="mt-0.5 text-base font-bold tracking-tight text-[#0A0A0A]">
+              <div className="text-[11px] font-medium text-[#547585]">
+                Распределение договора КП
+              </div>
+              <h2 className="mt-0.5 text-base font-semibold tracking-tight text-[#0F2936]">
                 Бюджет объекта · Прибыль и доли ролей
               </h2>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[11px] text-[#525252]">Маржинальность</div>
+              <div className="text-[11px] font-medium text-[#547585]">Маржинальность</div>
               <div
-                className={`font-mono text-base font-bold tabular-nums ${
+                className={`font-mono text-base font-semibold tabular-nums ${
                   finance.projectedMarginPercent < 20
-                    ? 'text-[#DC2626]'
+                    ? 'text-[#E11D48]'
                     : finance.projectedMarginPercent < 35
                     ? 'text-[#D97706]'
-                    : 'text-[#15803D]'
+                    : 'text-[#0D9488]'
                 }`}
               >
                 {finance.projectedMarginPercent.toFixed(1)}%
@@ -167,34 +172,67 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
               centerSublabel={
                 finance.isNegativeMargin
                   ? `Убыток ${formatCurrency(Math.abs(finance.projectedMarginAmount))}`
-                  : `Затраты ${finance.contractTotal > 0 ? Math.round((finance.totalCosts / finance.contractTotal) * 100) : 0}%`
+                  : `Затраты ${
+                      finance.contractTotal > 0
+                        ? Math.round((finance.totalCosts / finance.contractTotal) * 100)
+                        : 0
+                    }%`
               }
               emptyText="Добавьте этапы оплаты КП и записи журнала для расчёта структуры бюджета"
             />
           </div>
 
-          {/* FOT Threshold Bar */}
-          <div className="mt-6 border-t border-[#D4D4D4] pt-4">
+          {/* FOT Threshold Bar with >80% Amber Risk & >100% Coral-Ruby Critical Alert */}
+          <div
+            className={`mt-6 rounded-2xl border p-4 ${
+              finance.isOverFotLimit
+                ? 'border-[#FDA4AF]/60 border-l-4 border-l-rose-500 bg-gradient-to-r from-[#FFF1F2]/92 to-[#FFF7ED]/85'
+                : isFotWarning
+                ? 'border-amber-300/60 border-l-4 border-l-[#D97706] bg-amber-50/70'
+                : 'border-[#0EA5E9]/14 bg-[#F4FAFC]/85'
+            }`}
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="text-[#525252]">
-                Факт ФОТ к договору (лимит {finance.fotLimitPercent}%)
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[#547585]">
+                  Факт ФОТ к договору (лимит {finance.fotLimitPercent}%)
+                </span>
+                {finance.isOverFotLimit ? (
+                  <span className="rounded-full border border-[#FDA4AF]/75 bg-white/85 px-2.5 py-0.5 text-[10px] font-semibold text-[#E11D48] backdrop-blur-xs">
+                    Перерасход ФОТ
+                  </span>
+                ) : isFotWarning ? (
+                  <span className="rounded-full border border-amber-300/60 bg-amber-50/90 px-2.5 py-0.5 text-[10px] font-semibold text-[#B45309] backdrop-blur-xs">
+                    Внимание · ФОТ (&gt;80%)
+                  </span>
+                ) : null}
+              </div>
               <span
-                className={`font-mono font-bold tabular-nums ${
-                  finance.isOverFotLimit ? 'text-[#DC2626]' : 'text-[#0A0A0A]'
+                className={`font-mono font-semibold tabular-nums ${
+                  finance.isOverFotLimit
+                    ? 'text-[#E11D48]'
+                    : isFotWarning
+                    ? 'text-[#B45309]'
+                    : 'text-[#0D9488]'
                 }`}
               >
                 {finance.fotPercentOfContract.toFixed(1)}% · {formatCurrency(finance.fotTotal)}
               </span>
             </div>
-            <div className="relative mt-2 h-2 w-full bg-[#F4F4F4]">
+            <div className="relative mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-[#E1F2F6]">
               <div
-                className={`h-full ${finance.isOverFotLimit ? 'bg-[#DC2626]' : 'bg-[#0A0A0A]'}`}
+                className={`h-full rounded-full ${
+                  finance.isOverFotLimit
+                    ? 'bg-[#E11D48]'
+                    : isFotWarning
+                    ? 'bg-[#D97706]'
+                    : 'bg-gradient-to-r from-[#0D9488] to-[#0284C7]'
+                }`}
                 style={{ width: `${Math.min(100, finance.fotPercentOfContract)}%` }}
               />
               <div
                 style={{ left: `${Math.min(100, finance.fotLimitPercent)}%` }}
-                className="absolute -top-1 -bottom-1 w-[2px] bg-[#DC2626]"
+                className="absolute -top-0.5 -bottom-0.5 w-[2.5px] rounded-full bg-[#E11D48]"
                 title={`Лимит ФОТ: ${finance.fotLimitPercent}%`}
               />
             </div>
@@ -202,11 +240,13 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
         </div>
 
         {/* Chart 2: Vertical / Comparative Column Chart — Plan vs Fact Costs per Category */}
-        <div className="border border-[#0A0A0A] bg-white p-6 xl:col-span-6">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#0A0A0A] pb-4">
+        <div className="bento-card p-6 xl:col-span-6">
+          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#0EA5E9]/14 pb-4">
             <div>
-              <div className="text-[11px] text-[#525252]">Контроль перерасхода по статьям</div>
-              <h2 className="mt-0.5 text-base font-bold tracking-tight text-[#0A0A0A]">
+              <div className="text-[11px] font-medium text-[#547585]">
+                Контроль перерасхода по статьям
+              </div>
+              <h2 className="mt-0.5 text-base font-semibold tracking-tight text-[#0F2936]">
                 План затрат vs Факт затрат
               </h2>
             </div>
@@ -214,9 +254,9 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
             <button
               type="button"
               onClick={() => (editingPlans ? setEditingPlans(false) : openPlanEditor())}
-              className="flex h-8 items-center gap-1.5 border border-[#0A0A0A] bg-white px-3 text-[11px] font-semibold text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
+              className="flex h-8 items-center gap-1.5 rounded-full border border-[#0EA5E9]/18 bg-white/90 px-3.5 text-[11px] font-medium text-[#0F2936] transition-colors hover:border-[#0D9488] hover:bg-[#F0FDFA] hover:text-[#0D9488] whitespace-nowrap shrink-0"
             >
-              <SlidersHorizontal className="h-3 w-3" />
+              <SlidersHorizontal className="h-3 w-3" strokeWidth={1.6} />
               {editingPlans ? 'Скрыть настройку' : 'Настроить план'}
             </button>
           </div>
@@ -225,14 +265,14 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
           {editingPlans && (
             <form
               onSubmit={savePlanBudgets}
-              className="mt-4 border border-[#0F0F0F] bg-[#F7F7F6] p-4"
+              className="mt-4 rounded-xl border border-[#C5E6EC] bg-[#F3FBFD] p-4"
             >
-              <div className="flex items-center justify-between text-xs font-semibold text-[#0F0F0F]">
+              <div className="flex items-center justify-between text-xs font-bold text-[#0F2936]">
                 <span>Плановый бюджет затрат по статьям (₽)</span>
                 <button
                   type="button"
                   onClick={() => setEditingPlans(false)}
-                  className="text-[#525252] hover:text-[#0F0F0F]"
+                  className="text-[#4C6D7C] hover:text-[#0F2936]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -240,7 +280,7 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
               <div className="mt-3 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {comparisonCategories.rows.map((row) => (
                   <div key={row.group} className="flex items-center justify-between gap-2">
-                    <label className="truncate text-xs text-[#525252]">{row.group}</label>
+                    <label className="truncate text-xs text-[#4C6D7C]">{row.group}</label>
                     <input
                       type="number"
                       min="0"
@@ -249,23 +289,23 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
                       onChange={(e) =>
                         setPlanDraft((prev) => ({ ...prev, [row.group]: e.target.value }))
                       }
-                      className="h-8 w-28 border border-[#D4D4D4] bg-white px-2 text-right font-mono text-xs tabular-nums text-[#0F0F0F]"
+                      className="h-8 w-28 rounded-lg border border-[#C5E6EC] bg-white px-2 text-right font-mono text-xs tabular-nums text-[#0F2936] focus:border-[#0D9488] focus:outline-none"
                     />
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#E5E5E5] pt-3">
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-[#DDF0F4] pt-3">
                 <button
                   type="button"
                   onClick={resetPlanBudgets}
-                  className="inline-flex items-center gap-1 text-[11px] text-[#525252] hover:text-[#0F0F0F]"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-[#4C6D7C] hover:text-[#0F2936]"
                 >
                   <RotateCcw className="h-3 w-3" />
                   Сбросить к авто-плану
                 </button>
                 <button
                   type="submit"
-                  className="inline-flex h-8 items-center gap-1 bg-[#0F0F0F] px-3.5 text-xs font-medium text-white hover:bg-[#262626]"
+                  className="btn-pulse inline-flex h-8 items-center gap-1 rounded-full px-4 text-xs font-semibold"
                 >
                   <Check className="h-3.5 w-3.5" />
                   Сохранить план
@@ -274,82 +314,105 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
             </form>
           )}
 
-          {/* Legend */}
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#525252]">
-            <div className="flex flex-wrap items-center gap-4">
+          {/* Explicit High-Contrast Financial Legend */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#0EA5E9]/14 bg-[#F4FAFC]/85 px-3.5 py-2.5 text-[11px] font-medium text-[#0F2936]">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span className="flex items-center gap-1.5">
-                <span className="gantt-plan-hatch inline-block h-2.5 w-3.5 border border-[#0A0A0A]" />
+                <span className="gantt-plan-hatch inline-block h-2.5 w-4 rounded-sm border border-[#0284C7]" />
                 План ({formatCurrency(comparisonCategories.totalPlan)})
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-3.5 bg-[#0A0A0A]" />
-                Факт в норме
+                <span className="inline-block h-2.5 w-4 rounded-full bg-[#4F46E5]" />
+                Затраты в норме
               </span>
               <span className="flex items-center gap-1.5">
-                <span className="inline-block h-2.5 w-3.5 bg-[#DC2626]" />
+                <span className="inline-block h-2.5 w-4 rounded-full bg-[#D97706]" />
+                Внимание (&gt;80%)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2.5 w-4 rounded-full bg-[#E11D48]" />
                 Перерасход
               </span>
             </div>
-            <span className="font-mono font-bold tabular-nums text-[#0A0A0A]">
+            <span className="font-mono font-semibold tabular-nums text-[#0F2936]">
               Факт: {formatCurrency(comparisonCategories.totalFact)}
             </span>
           </div>
 
-          {/* Architectural Grouped Vertical Column Chart */}
-          <div className="mt-6 overflow-x-auto pb-1">
-            <div className="grid min-w-[440px] grid-cols-5 gap-3 sm:gap-4">
+          {/* High-Contrast Grouped Vertical Column Chart */}
+          <div className="mt-5 overflow-x-auto pb-1">
+            <div className="grid min-w-[440px] grid-cols-5 gap-2.5 sm:gap-3">
               {comparisonCategories.rows.slice(0, 5).map((row) => {
                 const planH = Math.max(
-                  row.plan > 0 ? 4 : 0,
+                  row.plan > 0 ? 6 : 0,
                   Math.round((row.plan / comparisonCategories.maxVal) * 140)
                 );
                 const factH = Math.max(
-                  row.fact > 0 ? 4 : 0,
+                  row.fact > 0 ? 6 : 0,
                   Math.round((row.fact / comparisonCategories.maxVal) * 140)
                 );
 
                 return (
-                  <div key={row.group} className="flex flex-col items-center">
+                  <div
+                    key={row.group}
+                    className={`flex flex-col items-center rounded-2xl px-1.5 py-2.5 ${
+                      row.isOver
+                        ? 'border border-[#FDA4AF]/60 border-l-4 border-l-rose-500 bg-gradient-to-b from-[#FFF1F2]/92 to-[#FFF7ED]/85'
+                        : row.isWarning
+                        ? 'border border-amber-300/60 bg-amber-50/70'
+                        : ''
+                    }`}
+                  >
                     {/* Delta Callout */}
-                    <div className="mb-2 h-4 font-mono text-[10px] font-bold tabular-nums">
+                    <div className="mb-2 h-5 font-mono text-[10px] font-semibold tabular-nums">
                       {row.isOver ? (
-                        <span className="text-[#DC2626]">+{formatCurrency(row.diff)}</span>
+                        <span className="text-[#E11D48]">+{formatCurrency(row.diff)}</span>
+                      ) : row.isWarning ? (
+                        <span className="text-[#B45309]">{Math.round(row.usagePct)}%</span>
                       ) : row.plan > 0 && row.fact > 0 ? (
-                        <span className="text-[#15803D]">
-                          {Math.round((row.fact / row.plan) * 100)}%
-                        </span>
+                        <span className="text-[#4F46E5]">{Math.round(row.usagePct)}%</span>
                       ) : (
-                        <span className="text-[#A3A3A3]">—</span>
+                        <span className="text-[#94B3C0]">—</span>
                       )}
                     </div>
 
                     {/* Paired Columns Plot Area */}
-                    <div className="flex h-[144px] w-full items-end justify-center gap-1.5 border-b border-[#0A0A0A] px-1">
+                    <div className="flex h-[144px] w-full items-end justify-center gap-1.5 border-b border-[#0EA5E9]/16 px-1">
                       <div
                         style={{ height: `${planH}px` }}
                         title={`План (${row.group}): ${formatCurrency(row.plan)}`}
-                        className="gantt-plan-hatch w-5 border border-b-0 border-[#0A0A0A] sm:w-6"
+                        className="gantt-plan-hatch w-5 rounded-t-md border border-b-0 border-[#0284C7]/80 sm:w-6"
                       />
                       <div
                         style={{ height: `${factH}px` }}
                         title={`Факт (${row.group}): ${formatCurrency(row.fact)}`}
-                        className={`w-5 sm:w-6 ${row.isOver ? 'bg-[#DC2626]' : 'bg-[#0A0A0A]'}`}
+                        className={`w-5 rounded-t-md sm:w-6 ${
+                          row.isOver
+                            ? 'bg-[#E11D48]'
+                            : row.isWarning
+                            ? 'bg-[#D97706]'
+                            : 'bg-[#4F46E5]'
+                        }`}
                       />
                     </div>
 
                     {/* Category Label & Exact Figures */}
                     <div className="mt-2.5 text-center">
-                      <div className="text-[11px] font-semibold leading-tight text-[#0A0A0A]">
+                      <div className="text-[11px] font-semibold leading-tight text-[#0F2936]">
                         {row.group === 'Печать и логистика' ? 'Печать / лог.' : row.group}
                       </div>
                       <div
-                        className={`mt-1 font-mono text-[10px] font-bold tabular-nums ${
-                          row.isOver ? 'text-[#DC2626]' : 'text-[#0A0A0A]'
+                        className={`mt-1 font-mono text-[10px] font-semibold tabular-nums ${
+                          row.isOver
+                            ? 'text-[#E11D48]'
+                            : row.isWarning
+                            ? 'text-[#B45309]'
+                            : 'text-[#0F2936]'
                         }`}
                       >
                         {formatCurrency(row.fact)}
                       </div>
-                      <div className="font-mono text-[10px] tabular-nums text-[#525252]">
+                      <div className="font-mono text-[10px] tabular-nums text-[#547585]">
                         / {formatCurrency(row.plan)}
                       </div>
                     </div>
@@ -361,11 +424,15 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
 
           {/* Any Extra Categories Beyond Core 5 */}
           {comparisonCategories.rows.length > 5 && (
-            <div className="mt-4 space-y-2 border-t border-[#D4D4D4] pt-3 text-xs">
+            <div className="mt-4 space-y-2 border-t border-[#DDF0F4] pt-3 text-xs">
               {comparisonCategories.rows.slice(5).map((row) => (
                 <div key={row.group} className="flex items-center justify-between">
-                  <span className="text-[#525252]">{row.group}</span>
-                  <span className="font-mono tabular-nums text-[#0A0A0A]">
+                  <span className="text-[#4C6D7C]">{row.group}</span>
+                  <span
+                    className={`font-mono tabular-nums ${
+                      row.isOver ? 'font-bold text-[#E11D48]' : 'text-[#0F2936]'
+                    }`}
+                  >
                     Факт {formatCurrency(row.fact)} / План {formatCurrency(row.plan)}
                   </span>
                 </div>
@@ -376,42 +443,42 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
       </div>
 
       {/* Transparent Monthly Salary Allocation Formula Breakdown */}
-      <div className="border border-[#0A0A0A] bg-white">
+      <div className="bento-card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowFormulaDetails((v) => !v)}
-          className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#F4F4F4]"
+          className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors hover:bg-[#F3FBFD]"
         >
           <div>
-            <div className="text-sm font-bold text-[#0A0A0A]">
+            <div className="text-sm font-semibold text-[#0F2936]">
               Прозрачный расчёт распределения окладов
             </div>
-            <div className="mt-0.5 text-xs text-[#525252]">
+            <div className="mt-0.5 text-xs text-[#547585]">
               Оклад штатного сотрудника × (Выработка на объекте / Вся выработка сотрудника по студии за месяц)
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <span className="font-mono text-xs font-bold tabular-nums text-[#0A0A0A]">
+            <span className="font-mono text-xs font-semibold tabular-nums text-[#0F2936]">
               {formatCurrency(finance.allocatedSalaryTotal)}
             </span>
             {showFormulaDetails ? (
-              <ChevronUp className="h-4 w-4 text-[#0A0A0A]" />
+              <ChevronUp className="h-4 w-4 text-[#0D9488]" strokeWidth={1.6} />
             ) : (
-              <ChevronDown className="h-4 w-4 text-[#0A0A0A]" />
+              <ChevronDown className="h-4 w-4 text-[#0D9488]" strokeWidth={1.6} />
             )}
           </div>
         </button>
 
         {showFormulaDetails && (
-          <div className="overflow-x-auto border-t border-[#0A0A0A]">
+          <div className="overflow-x-auto border-t border-[#DDF0F4]">
             {finance.salaryAllocations.length === 0 ? (
-              <div className="px-6 py-6 text-xs text-[#525252]">
+              <div className="px-6 py-6 text-xs text-[#4C6D7C]">
                 По этому объекту пока нет записей выработки окладных сотрудников. Внесите отработанные м² или часы в журнале ниже.
               </div>
             ) : (
               <table className="w-full min-w-[640px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-[#0A0A0A] bg-[#F4F4F4] text-[11px] font-semibold text-[#0A0A0A]">
+                  <tr className="border-b border-[#C5E6EC] bg-[#EEF8FA] text-[11px] font-bold text-[#0F2936]">
                     <th className="px-6 py-2.5">Месяц</th>
                     <th className="px-4 py-2.5">Должность</th>
                     <th className="px-4 py-2.5 text-right">Оклад / мес</th>
@@ -420,31 +487,31 @@ export const ProjectAnalytics: React.FC<ProjectAnalyticsProps> = ({
                     <th className="px-6 py-2.5 text-right">Отнесено на объект</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#D4D4D4] text-xs">
+                <tbody className="divide-y divide-[#E4F3F7] text-xs">
                   {finance.salaryAllocations.map((row) => {
                     const unit = row.basis === 'area' ? 'м²' : 'ч';
                     return (
-                      <tr key={`${row.month}_${row.memberId}`} className="hover:bg-[#F4F4F4]">
-                        <td className="px-6 py-3 text-[#0A0A0A]">
+                      <tr key={`${row.month}_${row.memberId}`} className="hover:bg-[#F3FBFD]">
+                        <td className="px-6 py-3 font-medium text-[#0F2936]">
                           {formatMonthLabel(row.month)}
                         </td>
-                        <td className="px-4 py-3 font-medium text-[#0A0A0A]">
-                          <span className="mr-2 font-mono text-[11px] text-[#525252]">
+                        <td className="px-4 py-3 font-semibold text-[#0F2936]">
+                          <span className="mr-2 rounded-md bg-[#E6F5F8] px-1.5 py-0.5 font-mono text-[10px] text-[#0F2936]">
                             {row.memberCode}
                           </span>
                           {row.memberRole}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#525252]">
+                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#4C6D7C]">
                           {formatCurrency(row.monthlySalary)}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#0A0A0A]">
+                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#0F2936]">
                           {formatNumber(row.projectVolume)} / {formatNumber(row.totalMonthVolume)}{' '}
                           {unit}
                         </td>
-                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#525252]">
+                        <td className="px-4 py-3 text-right font-mono tabular-nums text-[#4C6D7C]">
                           {row.sharePercent.toFixed(1)}%
                         </td>
-                        <td className="px-6 py-3 text-right font-mono font-bold tabular-nums text-[#0A0A0A]">
+                        <td className="px-6 py-3 text-right font-mono font-bold tabular-nums text-[#0D9488]">
                           {formatCurrency(row.allocatedAmount)}
                         </td>
                       </tr>

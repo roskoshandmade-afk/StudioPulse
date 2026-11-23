@@ -328,9 +328,9 @@ export function createDemoData(): AppData {
     startDate: getRelativeDate(-46),
     fotLimitPercent: DEFAULT_FOT_LIMIT_PERCENT,
     links: {
-      proposalUrl: 'https://limurproject.ru/#kp-lazurny',
-      measurementUrl: 'https://limurproject.ru/#obmer-lazurny',
-      folderUrl: 'https://limurproject.ru/#folder-lazurny',
+      proposalUrl: 'https://studiopulse.ru/#kp-lazurny',
+      measurementUrl: 'https://studiopulse.ru/#obmer-lazurny',
+      folderUrl: 'https://studiopulse.ru/#folder-lazurny',
     },
     teamIds: ['tm_designer', 'tm_visualizer', 'tm_drafter', 'tm_measurer'],
     costLines: [
@@ -584,8 +584,8 @@ export function createDemoData(): AppData {
     startDate: getRelativeDate(-55),
     fotLimitPercent: DEFAULT_FOT_LIMIT_PERCENT,
     links: {
-      proposalUrl: 'https://limurproject.ru/#kp-sever',
-      measurementUrl: 'https://limurproject.ru/#obmer-sever',
+      proposalUrl: 'https://studiopulse.ru/#kp-sever',
+      measurementUrl: 'https://studiopulse.ru/#obmer-sever',
       folderUrl: '',
     },
     teamIds: ['tm_designer', 'tm_visualizer', 'tm_drafter', 'tm_measurer'],
@@ -812,7 +812,7 @@ export function createDemoData(): AppData {
     startDate: getRelativeDate(-21),
     fotLimitPercent: DEFAULT_FOT_LIMIT_PERCENT,
     links: {
-      proposalUrl: 'https://limurproject.ru/#kp-scandinavia',
+      proposalUrl: 'https://studiopulse.ru/#kp-scandinavia',
       measurementUrl: '',
       folderUrl: '',
     },
@@ -996,7 +996,7 @@ export function createDemoData(): AppData {
     version: 2,
     settings: {
       defaultFotLimitPercent: DEFAULT_FOT_LIMIT_PERCENT,
-      studioName: 'LIMUR STUDIO OS',
+      studioName: 'Студия Пульс',
     },
     team: DEFAULT_TEAM,
     projects: [projectLazurny, projectSever, projectScandinavia],
@@ -1010,7 +1010,7 @@ export function createEmptyData(): AppData {
     version: 2,
     settings: {
       defaultFotLimitPercent: DEFAULT_FOT_LIMIT_PERCENT,
-      studioName: 'LIMUR STUDIO OS',
+      studioName: 'Студия Пульс',
     },
     team: DEFAULT_TEAM,
     projects: [],

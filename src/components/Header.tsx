@@ -1,23 +1,24 @@
 import React, { useState } from 'react';
-import { Link2, Plus, Menu, X, Database } from 'lucide-react';
+import { Menu, X, Database } from 'lucide-react';
 import { UserRole } from '../types';
 import { SyncStatus } from '../utils/supabaseSync';
+import { LogoPulse } from './LogoPulse';
 
-export type WorkspaceTab = 'projects' | 'worklog' | 'team';
+export type WorkspaceTab = 'projects' | 'proposals' | 'worklog' | 'team';
 
 interface HeaderProps {
   role: UserRole;
   activeTab: WorkspaceTab;
   selectedProjectName?: string;
-  canCopyClientLink: boolean;
+  canCopyClientLink?: boolean;
   syncStatus: SyncStatus;
   hasPendingChanges?: boolean;
   pendingCount?: number;
   syncErrorHint?: string;
   onRoleChange: (role: UserRole) => void;
   onTabChange: (tab: WorkspaceTab) => void;
-  onOpenNewProject: () => void;
-  onCopyClientLink: () => void;
+  onOpenNewProject?: () => void;
+  onCopyClientLink?: () => void;
   onOpenBackup: () => void;
   onOpenSupabaseSettings: () => void;
   onGoHome: () => void;
@@ -41,20 +42,20 @@ export const SyncIndicator: React.FC<{
   const effectivePending = Math.max(pendingCount, hasPendingChanges ? 1 : 0);
 
   const dotClass = isSyncingState
-    ? 'bg-[#2563EB] animate-pulse'
+    ? 'bg-[#0284C7] animate-pulse'
     : isOfflineOrPending
     ? effectivePending > 0
-      ? 'bg-[#EA580C]'
-      : 'bg-[#DC2626]'
-    : 'bg-[#15803D]';
+      ? 'bg-[#D97706]'
+      : 'bg-[#E11D48]'
+    : 'bg-[#0D9488]';
 
   const buttonClass = isSyncingState
-    ? 'border-[#2563EB] bg-[#EFF6FF] text-[#1D4ED8] hover:bg-[#1D4ED8] hover:text-white'
+    ? 'border-[#0284C7]/25 bg-[#F0F9FF]/90 text-[#0284C7] hover:bg-[#0284C7] hover:text-white'
     : isOfflineOrPending
     ? effectivePending > 0
-      ? 'border-[#EA580C] bg-[#FFF7ED] text-[#C2410C] hover:bg-[#EA580C] hover:text-white'
-      : 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626] hover:bg-[#DC2626] hover:text-white'
-    : 'border-transparent text-[#525252] hover:border-[#0A0A0A] hover:text-[#0A0A0A]';
+      ? 'border-[#D97706]/30 bg-amber-50/85 text-[#B45309] hover:bg-[#D97706] hover:text-white'
+      : 'border-rose-300/60 bg-rose-50/85 text-[#E11D48] hover:bg-[#E11D48] hover:text-white'
+    : 'border-[#0EA5E9]/20 bg-white/80 text-[#0F766E] hover:border-[#0D9488]/40 hover:bg-[#F0FDFA]';
 
   const title = isSyncingState
     ? effectivePending > 0
@@ -72,14 +73,7 @@ export const SyncIndicator: React.FC<{
     }
     if (isOfflineOrPending) {
       if (effectivePending > 0) {
-        return (
-          <>
-            <span className="hidden sm:inline">
-              Офлайн (ожидают отправки: {effectivePending})
-            </span>
-            <span className="sm:hidden">Офлайн ({effectivePending})</span>
-          </>
-        );
+        return <span>Офлайн ({effectivePending})</span>;
       }
       return <span>Офлайн</span>;
     }
@@ -91,10 +85,10 @@ export const SyncIndicator: React.FC<{
       <button
         type="button"
         onClick={onClick}
-        className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap shrink-0 ${buttonClass}`}
+        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium backdrop-blur-xs transition-colors whitespace-nowrap shrink-0 sm:px-3 ${buttonClass}`}
         title={title}
       >
-        <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
+        <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden="true" />
         {renderLabel()}
       </button>
     );
@@ -102,10 +96,10 @@ export const SyncIndicator: React.FC<{
 
   return (
     <span
-      className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[#525252] whitespace-nowrap shrink-0"
+      className="inline-flex items-center gap-1.5 rounded-full border border-[#0EA5E9]/20 bg-white/80 px-2.5 py-1 text-[11px] font-medium text-[#4C6D7C] backdrop-blur-xs whitespace-nowrap shrink-0 sm:px-3"
       title={title}
     >
-      <span className={`h-2 w-2 rounded-none ${dotClass}`} aria-hidden="true" />
+      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} aria-hidden="true" />
       {renderLabel()}
     </span>
   );
@@ -114,15 +108,12 @@ export const SyncIndicator: React.FC<{
 export const Header: React.FC<HeaderProps> = ({
   role,
   activeTab,
-  canCopyClientLink,
   syncStatus,
   hasPendingChanges = false,
   pendingCount = 0,
   syncErrorHint,
   onRoleChange,
   onTabChange,
-  onOpenNewProject,
-  onCopyClientLink,
   onOpenBackup,
   onOpenSupabaseSettings,
   onGoHome,
@@ -130,25 +121,20 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#0A0A0A] bg-white">
+    <header className="no-print sticky top-0 z-30 w-full overflow-x-clip border-b border-[#0EA5E9]/14 bg-white/82 backdrop-blur-md shadow-[0_8px_28px_-12px_rgba(15,76,92,0.08)]">
       {/* Primary Top Bar */}
-      <div className="mx-auto flex h-14 max-w-[1440px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        {/* Zone 1: Brand Wordmark + Live Sync Status */}
-        <div className="flex items-center gap-3.5 shrink-0">
+      <div className="mx-auto flex h-[68px] w-full max-w-[1440px] items-center justify-between gap-2 px-3 sm:gap-3 sm:px-6 xl:gap-4 xl:px-8">
+        {/* Zone 1: Brand Logo + Live Sync Status */}
+        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5 xl:gap-3">
           <button
             type="button"
             onClick={onGoHome}
-            className="text-left text-sm font-bold tracking-[0.18em] text-[#0A0A0A] transition-opacity hover:opacity-75 whitespace-nowrap shrink-0"
+            className="flex items-center transition-opacity hover:opacity-85 shrink-0"
+            aria-label="Студия Пульс — на главную"
           >
-            LIMUR STUDIO OS
+            <LogoPulse />
           </button>
-          <span
-            className="inline-flex items-center border border-[#D97706] bg-[#FFFBEB] px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none tracking-[0.08em] text-[#B45309] whitespace-nowrap shrink-0 select-none"
-            title="Изолированная тестовая копия (Sandbox / Dev)"
-          >
-            КОПИЯ / DEV
-          </span>
-          <span className="h-3.5 w-px bg-[#D4D4D4]" aria-hidden="true" />
+
           <SyncIndicator
             status={syncStatus}
             hasPendingChanges={hasPendingChanges}
@@ -158,27 +144,41 @@ export const Header: React.FC<HeaderProps> = ({
           />
         </div>
 
-        {/* Zone 2: Primary Navigation (Desktop, hidden for Client role) */}
+        {/* Zone 2: Single Desktop Navigation (strictly visible on lg+ only) */}
         {role !== 'client' ? (
-          <nav className="hidden items-center gap-6 md:flex">
+          <nav
+            aria-label="Основная навигация"
+            className="hidden min-w-0 items-center gap-0.5 rounded-full border border-[#0EA5E9]/16 bg-[#F2FAFC]/90 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] lg:flex xl:gap-1"
+          >
             <button
               type="button"
               onClick={() => onTabChange('projects')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              className={`rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all whitespace-nowrap shrink-0 xl:px-3 xl:text-xs ${
                 activeTab === 'projects'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
+                  ? 'btn-pulse font-semibold'
+                  : 'text-[#4C6D7C] hover:bg-white/85 hover:text-[#0F2936]'
               }`}
             >
               Пульс студии
             </button>
             <button
               type="button"
+              onClick={() => onTabChange('proposals')}
+              className={`rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all whitespace-nowrap shrink-0 xl:px-3 xl:text-xs ${
+                activeTab === 'proposals'
+                  ? 'btn-pulse font-semibold'
+                  : 'text-[#4C6D7C] hover:bg-white/85 hover:text-[#0F2936]'
+              }`}
+            >
+              Конструктор КП
+            </button>
+            <button
+              type="button"
               onClick={() => onTabChange('worklog')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              className={`rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all whitespace-nowrap shrink-0 xl:px-3 xl:text-xs ${
                 activeTab === 'worklog'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
+                  ? 'btn-pulse font-semibold'
+                  : 'text-[#4C6D7C] hover:bg-white/85 hover:text-[#0F2936]'
               }`}
             >
               Журнал и расходы
@@ -186,10 +186,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={() => onTabChange('team')}
-              className={`border-b-2 py-4 text-xs font-semibold transition-colors whitespace-nowrap shrink-0 ${
+              className={`rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all whitespace-nowrap shrink-0 xl:px-3 xl:text-xs ${
                 activeTab === 'team'
-                  ? 'border-[#0A0A0A] text-[#0A0A0A]'
-                  : 'border-transparent text-[#525252] hover:text-[#0A0A0A]'
+                  ? 'btn-pulse font-semibold'
+                  : 'text-[#4C6D7C] hover:bg-white/85 hover:text-[#0F2936]'
               }`}
             >
               Команда и ФОТ
@@ -197,21 +197,21 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               type="button"
               onClick={onOpenBackup}
-              className="border-b-2 border-transparent py-4 text-xs font-medium text-[#525252] transition-colors hover:text-[#0A0A0A] whitespace-nowrap shrink-0"
+              className="rounded-full px-2.5 py-1.5 text-[11px] font-medium text-[#4C6D7C] transition-colors hover:bg-white/85 hover:text-[#0F2936] whitespace-nowrap shrink-0 xl:px-3 xl:text-xs"
             >
               Резервная копия
             </button>
           </nav>
         ) : (
-          <div className="hidden text-xs font-medium text-[#525252] md:block whitespace-nowrap">
+          <div className="hidden rounded-full border border-[#0EA5E9]/18 bg-[#F2FAFC]/90 px-4 py-1.5 text-xs font-medium text-[#4C6D7C] whitespace-nowrap lg:block">
             Режим предпросмотра для клиента
           </div>
         )}
 
-        {/* Zone 3: Role Switcher + Primary Action (Desktop) */}
-        <div className="hidden items-center gap-2.5 lg:flex shrink-0">
+        {/* Zone 3: Role Switcher (Tablet & Desktop md+) */}
+        <div className="hidden items-center md:flex shrink-0">
           <div
-            className="flex items-center border border-[#0A0A0A] bg-[#F4F4F4] p-0.5"
+            className="flex items-center rounded-full border border-[#0EA5E9]/16 bg-[#F2FAFC]/90 p-0.5"
             role="group"
             aria-label="Переключатель режима роли"
           >
@@ -220,71 +220,115 @@ export const Header: React.FC<HeaderProps> = ({
                 key={opt.value}
                 type="button"
                 onClick={() => onRoleChange(opt.value)}
-                className={`px-2.5 py-1.5 text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                className={`rounded-full px-2.5 py-1.5 text-[11px] transition-all whitespace-nowrap shrink-0 xl:px-3 xl:text-xs ${
                   role === opt.value
-                    ? 'bg-[#0A0A0A] text-white'
-                    : 'text-[#525252] hover:text-[#0A0A0A]'
+                    ? 'btn-pulse font-semibold'
+                    : 'font-medium text-[#4C6D7C] hover:text-[#0F2936]'
                 }`}
               >
                 {opt.label}
               </button>
             ))}
           </div>
-
-          {canCopyClientLink && (
-            <button
-              type="button"
-              onClick={onCopyClientLink}
-              className="flex h-9 items-center gap-1.5 border border-[#0A0A0A] bg-white px-3 text-xs font-medium text-[#0A0A0A] transition-colors hover:bg-[#0A0A0A] hover:text-white whitespace-nowrap shrink-0"
-              title="Скопировать прямую ссылку в режиме Client View без панели ролей"
-            >
-              <Link2 className="h-3.5 w-3.5" />
-              Ссылка клиенту
-            </button>
-          )}
-
-          {role !== 'client' && (
-            <button
-              type="button"
-              onClick={onOpenNewProject}
-              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#262626] whitespace-nowrap shrink-0"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Новый проект
-            </button>
-          )}
         </div>
 
-        {/* Mobile / Tablet compact controls */}
-        <div className="flex items-center gap-2 lg:hidden">
-          {role !== 'client' && (
-            <button
-              type="button"
-              onClick={onOpenNewProject}
-              className="flex h-9 items-center gap-1 bg-[#0A0A0A] px-3 text-xs font-semibold text-white whitespace-nowrap shrink-0"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Проект
-            </button>
-          )}
+        {/* Mobile Menu Trigger (< md) */}
+        <div className="flex items-center md:hidden shrink-0">
           <button
             type="button"
             onClick={() => setMobileMenuOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center border border-[#0A0A0A] bg-white text-[#0A0A0A]"
-            aria-label="Открыть меню"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-[#0EA5E9]/20 bg-white/90 text-[#0F2936] transition-colors hover:border-[#0D9488]/45 hover:bg-[#F0FDFA]"
+            aria-label={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {mobileMenuOpen ? (
+              <X className="h-4 w-4" strokeWidth={1.6} />
+            ) : (
+              <Menu className="h-4 w-4" strokeWidth={1.6} />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown Drawer */}
+      {/* Tablet Secondary Nav Strip (strictly hidden on lg+ and < md) */}
+      <div className="hidden border-t border-[#0EA5E9]/10 bg-white/60 px-6 py-2 md:flex lg:hidden">
+        <div className="mx-auto flex w-full max-w-[1440px] items-center justify-center">
+          {role !== 'client' ? (
+            <nav
+              aria-label="Навигация по разделам"
+              className="flex flex-wrap items-center justify-center gap-1 rounded-full border border-[#0EA5E9]/16 bg-[#F2FAFC]/90 p-1"
+            >
+              <button
+                type="button"
+                onClick={() => onTabChange('projects')}
+                className={`rounded-full px-3.5 py-1.5 text-xs transition-all whitespace-nowrap ${
+                  activeTab === 'projects'
+                    ? 'btn-pulse font-semibold'
+                    : 'font-medium text-[#4C6D7C] hover:bg-white hover:text-[#0F2936]'
+                }`}
+              >
+                Пульс студии
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange('proposals')}
+                className={`rounded-full px-3.5 py-1.5 text-xs transition-all whitespace-nowrap ${
+                  activeTab === 'proposals'
+                    ? 'btn-pulse font-semibold'
+                    : 'font-medium text-[#4C6D7C] hover:bg-white hover:text-[#0F2936]'
+                }`}
+              >
+                Конструктор КП
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange('worklog')}
+                className={`rounded-full px-3.5 py-1.5 text-xs transition-all whitespace-nowrap ${
+                  activeTab === 'worklog'
+                    ? 'btn-pulse font-semibold'
+                    : 'font-medium text-[#4C6D7C] hover:bg-white hover:text-[#0F2936]'
+                }`}
+              >
+                Журнал и расходы
+              </button>
+              <button
+                type="button"
+                onClick={() => onTabChange('team')}
+                className={`rounded-full px-3.5 py-1.5 text-xs transition-all whitespace-nowrap ${
+                  activeTab === 'team'
+                    ? 'btn-pulse font-semibold'
+                    : 'font-medium text-[#4C6D7C] hover:bg-white hover:text-[#0F2936]'
+                }`}
+              >
+                Команда и ФОТ
+              </button>
+              <button
+                type="button"
+                onClick={onOpenBackup}
+                className="rounded-full px-3.5 py-1.5 text-xs font-medium text-[#4C6D7C] transition-colors hover:bg-white hover:text-[#0F2936] whitespace-nowrap"
+              >
+                Резервная копия
+              </button>
+            </nav>
+          ) : (
+            <div className="rounded-full border border-[#0EA5E9]/18 bg-[#F2FAFC]/90 px-4 py-1 text-xs font-medium text-[#4C6D7C] whitespace-nowrap">
+              Режим предпросмотра для клиента
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile Dropdown Drawer (strictly hidden on md+) */}
       {mobileMenuOpen && (
-        <div className="border-t border-[#0A0A0A] bg-white px-4 py-4 lg:hidden">
+        <div className="border-t border-[#0EA5E9]/14 bg-white/95 px-4 py-4 backdrop-blur-md md:hidden">
           <div className="space-y-4">
-            <div>
-              <div className="mb-2 text-[11px] font-medium text-[#525252]">Режим просмотра</div>
-              <div className="grid grid-cols-3 border border-[#0A0A0A] bg-[#F4F4F4] p-0.5">
+            <div className="space-y-2">
+              <div className="text-[11px] font-medium text-[#4C6D7C]">Режим просмотра</div>
+              <div
+                className="grid grid-cols-3 gap-1 rounded-full border border-[#0EA5E9]/16 bg-[#F2FAFC] p-1"
+                role="group"
+                aria-label="Переключатель режима роли"
+              >
                 {ROLE_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -293,10 +337,8 @@ export const Header: React.FC<HeaderProps> = ({
                       onRoleChange(opt.value);
                       setMobileMenuOpen(false);
                     }}
-                    className={`py-2 text-xs font-medium transition-colors ${
-                      role === opt.value
-                        ? 'bg-[#0A0A0A] text-white'
-                        : 'text-[#525252]'
+                    className={`rounded-full py-2 text-xs transition-all ${
+                      role === opt.value ? 'btn-pulse font-semibold' : 'font-medium text-[#4C6D7C]'
                     }`}
                   >
                     {opt.label}
@@ -306,20 +348,37 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {role !== 'client' && (
-              <div className="grid grid-cols-1 gap-1 border-t border-[#D4D4D4] pt-3">
+              <nav
+                aria-label="Мобильная навигация"
+                className="grid grid-cols-1 gap-1.5 border-t border-[#0EA5E9]/12 pt-3"
+              >
                 <button
                   type="button"
                   onClick={() => {
                     onTabChange('projects');
                     setMobileMenuOpen(false);
                   }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
+                  className={`flex min-h-[40px] items-center justify-between rounded-2xl px-3.5 text-left text-sm ${
                     activeTab === 'projects'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
+                      ? 'btn-pulse font-semibold'
+                      : 'font-medium text-[#0F2936] hover:bg-[#F2FAFC]'
                   }`}
                 >
-                  Пульс проектов
+                  Пульс студии
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onTabChange('proposals');
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`flex min-h-[40px] items-center justify-between rounded-2xl px-3.5 text-left text-sm ${
+                    activeTab === 'proposals'
+                      ? 'btn-pulse font-semibold'
+                      : 'font-medium text-[#0F2936] hover:bg-[#F2FAFC]'
+                  }`}
+                >
+                  Конструктор КП
                 </button>
                 <button
                   type="button"
@@ -327,13 +386,13 @@ export const Header: React.FC<HeaderProps> = ({
                     onTabChange('worklog');
                     setMobileMenuOpen(false);
                   }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
+                  className={`flex min-h-[40px] items-center justify-between rounded-2xl px-3.5 text-left text-sm ${
                     activeTab === 'worklog'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
+                      ? 'btn-pulse font-semibold'
+                      : 'font-medium text-[#0F2936] hover:bg-[#F2FAFC]'
                   }`}
                 >
-                  Журнал выработки и расходов
+                  Журнал и расходы
                 </button>
                 <button
                   type="button"
@@ -341,13 +400,13 @@ export const Header: React.FC<HeaderProps> = ({
                     onTabChange('team');
                     setMobileMenuOpen(false);
                   }}
-                  className={`flex min-h-[40px] items-center justify-between px-3 text-left text-sm ${
+                  className={`flex min-h-[40px] items-center justify-between rounded-2xl px-3.5 text-left text-sm ${
                     activeTab === 'team'
-                      ? 'bg-[#0A0A0A] font-semibold text-white'
-                      : 'text-[#0A0A0A] hover:bg-[#F4F4F4]'
+                      ? 'btn-pulse font-semibold'
+                      : 'font-medium text-[#0F2936] hover:bg-[#F2FAFC]'
                   }`}
                 >
-                  Команда и лимит ФОТ
+                  Команда и ФОТ
                 </button>
                 <button
                   type="button"
@@ -355,28 +414,12 @@ export const Header: React.FC<HeaderProps> = ({
                     onOpenBackup();
                     setMobileMenuOpen(false);
                   }}
-                  className="flex min-h-[40px] items-center gap-2 px-3 text-left text-sm text-[#0A0A0A] hover:bg-[#F4F4F4]"
+                  className="flex min-h-[40px] items-center gap-2 rounded-2xl px-3.5 text-left text-sm font-medium text-[#0F2936] hover:bg-[#F2FAFC]"
                 >
-                  <Database className="h-4 w-4" />
-                  Резервная копия (JSON / Сброс)
+                  <Database className="h-4 w-4 text-[#0D9488]" strokeWidth={1.6} />
+                  Резервная копия
                 </button>
-              </div>
-            )}
-
-            {canCopyClientLink && (
-              <div className="border-t border-[#D4D4D4] pt-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onCopyClientLink();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="flex min-h-[42px] w-full items-center justify-center gap-2 border border-[#0A0A0A] bg-white px-4 text-xs font-semibold text-[#0A0A0A]"
-                >
-                  <Link2 className="h-3.5 w-3.5" />
-                  Скопировать ссылку для клиента
-                </button>
-              </div>
+              </nav>
             )}
           </div>
         </div>

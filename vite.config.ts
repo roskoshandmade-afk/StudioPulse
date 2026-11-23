@@ -18,8 +18,8 @@ export default defineConfig(({mode}) => {
   return {
     base: './',
     define: {
-      __LIMUR_SUPABASE_URL__: JSON.stringify(supabaseUrl),
-      __LIMUR_SUPABASE_ANON_KEY__: JSON.stringify(supabaseAnonKey),
+      __PULSE_SUPABASE_URL__: JSON.stringify(supabaseUrl),
+      __PULSE_SUPABASE_ANON_KEY__: JSON.stringify(supabaseAnonKey),
     },
     plugins: [
       react(),

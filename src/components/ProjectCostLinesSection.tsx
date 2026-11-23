@@ -115,15 +115,20 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
     return { totalBudget, totalPaid, totalRemaining, paidPct, remPct };
   }, [costLines]);
 
-  // Traffic Light for Project Margin & FOT (Green if FOT <= 45% and positive margin; Red if negative / cash gap)
+  // Traffic Light for Project Margin & FOT (Coral for critical, Amber for >80% warning or over limit, Teal for normal)
   const trafficLight = useMemo(() => {
     const limit = finance.fotLimitPercent || 45;
+    const fotUtilizationPct = limit > 0 ? (finance.fotPercentOfContract / limit) * 100 : 0;
+
     if (finance.isNegativeMargin) {
       return {
         tone: 'red' as const,
-        dotClass: 'bg-[#DC2626]',
-        borderClass: 'border-[#DC2626]',
-        textClass: 'text-[#DC2626]',
+        dotClass: 'bg-[#E11D48]',
+        cardClass:
+          'border-[#FDA4AF]/60 border-l-4 border-l-rose-500 bg-gradient-to-r from-[#FFF1F2]/92 to-[#FFF7ED]/85',
+        textClass: 'text-[#E11D48]',
+        badgeClass: 'border border-[#FDA4AF]/75 bg-white/85 text-[#E11D48] backdrop-blur-xs',
+        badge: 'Критично',
         label: 'Убыток по объекту',
         detail: `Затраты превысили договор КП на ${formatCurrency(Math.abs(finance.projectedMarginAmount))} (скидка или перерасход команды).`,
       };
@@ -131,28 +136,48 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
     if (finance.isCashNegative) {
       return {
         tone: 'red' as const,
-        dotClass: 'bg-[#DC2626]',
-        borderClass: 'border-[#DC2626]',
-        textClass: 'text-[#DC2626]',
+        dotClass: 'bg-[#E11D48]',
+        cardClass:
+          'border-[#FDA4AF]/60 border-l-4 border-l-rose-500 bg-gradient-to-r from-[#FFF1F2]/92 to-[#FFF7ED]/85',
+        textClass: 'text-[#E11D48]',
+        badgeClass: 'border border-[#FDA4AF]/75 bg-white/85 text-[#E11D48] backdrop-blur-xs',
+        badge: 'Критично',
         label: 'Кассовый разрыв',
         detail: `Затраты (${formatCurrency(finance.totalCosts)}) выше оплаченных клиентом этапов (${formatCurrency(finance.paidTotal)}).`,
       };
     }
     if (finance.fotPercentOfContract > limit) {
       return {
-        tone: 'amber' as const,
-        dotClass: 'bg-[#D97706]',
-        borderClass: 'border-[#D97706]',
-        textClass: 'text-[#D97706]',
+        tone: 'red' as const,
+        dotClass: 'bg-[#E11D48]',
+        cardClass:
+          'border-[#FDA4AF]/60 border-l-4 border-l-rose-500 bg-gradient-to-r from-[#FFF1F2]/92 to-[#FFF7ED]/85',
+        textClass: 'text-[#E11D48]',
+        badgeClass: 'border border-[#FDA4AF]/75 bg-white/85 text-[#E11D48] backdrop-blur-xs',
+        badge: 'Превышен лимит',
         label: `ФОТ выше ${limit}% (${finance.fotPercentOfContract.toFixed(1)}%)`,
         detail: `Маржа положительная (${formatCurrency(finance.projectedMarginAmount)}), но доля команды превышает целевой порог ${limit}%.`,
       };
     }
+    if (fotUtilizationPct >= 80) {
+      return {
+        tone: 'amber' as const,
+        dotClass: 'bg-[#D97706]',
+        cardClass: 'border-amber-300/60 border-l-4 border-l-[#D97706] bg-amber-50/75',
+        textClass: 'text-[#B45309]',
+        badgeClass: 'border border-amber-300/60 bg-amber-50/90 text-[#B45309] backdrop-blur-xs',
+        badge: 'Внимание · ФОТ',
+        label: `ФОТ близок к лимиту (${Math.round(fotUtilizationPct)}% от порога ${limit}%)`,
+        detail: `ФОТ составляет ${finance.fotPercentOfContract.toFixed(1)}% от договора — контролируйте новые начисления по команде.`,
+      };
+    }
     return {
       tone: 'green' as const,
-      dotClass: 'bg-[#15803D]',
-      borderClass: 'border-[#15803D]',
-      textClass: 'text-[#15803D]',
+      dotClass: 'bg-[#0D9488]',
+      cardClass: 'border-[#0D9488]/20 bg-[#F0FDFA]/85',
+      textClass: 'text-[#0D9488]',
+      badgeClass: 'border border-[#0D9488]/20 bg-white/85 text-[#0D9488] backdrop-blur-xs',
+      badge: 'Норма',
       label: `В норме · ФОТ ≤ ${limit}%`,
       detail: `ФОТ составляет ${finance.fotPercentOfContract.toFixed(1)}% от договора, прогнозная маржа ${finance.projectedMarginPercent.toFixed(1)}%.`,
     };
@@ -292,85 +317,94 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
   return (
     <section
       aria-label="Команда и затраты объекта"
-      className="border border-[#0A0A0A] bg-white"
+      className="bento-card overflow-hidden"
     >
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-[#0A0A0A] px-5 py-4 sm:flex-row sm:items-center">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#0EA5E9]/14 px-6 py-4 sm:flex-row sm:items-center">
         <div>
-          <div className="text-[11px] text-[#525252]">
+          <div className="text-[11px] font-medium text-[#547585]">
             Только для Руководителя и Помощника · Совмещение ролей, сдельщики, окладники и накладные
           </div>
-          <h2 className="mt-0.5 text-base font-bold tracking-tight text-[#0A0A0A]">
+          <h2 className="mt-0.5 text-base font-semibold tracking-tight text-[#0F2936]">
             Команда и затраты объекта
           </h2>
         </div>
         <button
           type="button"
           onClick={() => openNewForm()}
-          className="flex h-9 items-center gap-1.5 self-start bg-[#0A0A0A] px-3.5 text-xs font-semibold text-white transition-colors hover:bg-[#262626] sm:self-auto whitespace-nowrap"
+          className="btn-pulse flex h-9 items-center gap-1.5 self-start rounded-full px-4 text-xs font-semibold sm:self-auto whitespace-nowrap"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <Plus className="h-3.5 w-3.5" strokeWidth={1.8} />
           Добавить строку затрат
         </button>
       </div>
 
       {/* Margin & FOT Traffic Light Strip */}
-      <div className="grid grid-cols-1 gap-px border-b border-[#0A0A0A] bg-[#D4D4D4] lg:grid-cols-12">
-        <div className="flex items-start gap-3 bg-white px-5 py-4 lg:col-span-5">
+      <div className="grid grid-cols-1 gap-4 border-b border-[#0EA5E9]/14 bg-[#F4FAFC]/80 p-6 lg:grid-cols-12">
+        <div
+          className={`flex items-start gap-3 rounded-2xl border px-4 py-3.5 lg:col-span-5 ${trafficLight.cardClass}`}
+        >
           <span
-            className={`mt-1 h-3 w-3 shrink-0 ${trafficLight.dotClass}`}
+            className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${trafficLight.dotClass}`}
             aria-hidden="true"
           />
           <div>
-            <div className={`text-xs font-bold ${trafficLight.textClass}`}>
-              {trafficLight.label}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`text-xs font-semibold ${trafficLight.textClass}`}>
+                {trafficLight.label}
+              </span>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${trafficLight.badgeClass}`}
+              >
+                {trafficLight.badge}
+              </span>
             </div>
-            <p className="mt-0.5 text-[11px] leading-snug text-[#525252]">
+            <p className="mt-1 text-[11px] leading-snug text-[#547585]">
               {trafficLight.detail}
             </p>
           </div>
         </div>
 
-        <div className="bg-[#F4F4F4] px-4 py-3.5 lg:col-span-2">
-          <div className="text-[10px] text-[#525252]">Бюджет затрат</div>
-          <div className="mt-1 font-mono text-sm font-bold tabular-nums text-[#0A0A0A]">
+        <div className="rounded-2xl border border-[#0EA5E9]/14 bg-white/90 px-4 py-3.5 lg:col-span-2">
+          <div className="text-[10px] font-medium text-[#547585]">Бюджет затрат</div>
+          <div className="mt-1 font-mono text-sm font-semibold tabular-nums text-[#0F2936]">
             {formatCurrency(linesSummary.totalBudget)}
           </div>
-          <div className="font-mono text-[10px] tabular-nums text-[#525252]">
+          <div className="font-mono text-[10px] tabular-nums text-[#547585]">
             ФОТ {finance.fotPercentOfContract.toFixed(1)}% от КП
           </div>
         </div>
 
-        <div className="bg-[#F4F4F4] px-4 py-3.5 lg:col-span-2">
-          <div className="text-[10px] text-[#525252]">Выплачено</div>
-          <div className="mt-1 font-mono text-sm font-bold tabular-nums text-[#15803D]">
+        <div className="rounded-2xl border border-[#0EA5E9]/14 bg-white/90 px-4 py-3.5 lg:col-span-2">
+          <div className="text-[10px] font-medium text-[#547585]">Выплачено</div>
+          <div className="mt-1 font-mono text-sm font-semibold tabular-nums text-[#0D9488]">
             {formatCurrency(linesSummary.totalPaid)}
           </div>
-          <div className="font-mono text-[10px] tabular-nums text-[#525252]">
+          <div className="font-mono text-[10px] tabular-nums text-[#547585]">
             {linesSummary.paidPct}% от бюджета
           </div>
         </div>
 
-        <div className="bg-[#0A0A0A] px-4 py-3.5 text-white lg:col-span-3">
-          <div className="flex items-center justify-between text-[10px] text-[#A3A3A3]">
+        <div
+          className={`px-4 py-3.5 lg:col-span-3 ${
+            finance.isNegativeMargin ? 'bento-card-risk' : 'bento-card-balance'
+          }`}
+        >
+          <div
+            className={`flex items-center justify-between text-[10px] font-medium ${
+              finance.isNegativeMargin ? 'text-[#9F1239]' : 'text-[#0F6E6E]'
+            }`}
+          >
             <span>Остаток к выплате</span>
             <span>Маржа объекта</span>
           </div>
-          <div className="mt-1 flex items-baseline justify-between gap-2 font-mono text-sm font-bold tabular-nums">
-            <span className="text-white">{formatCurrency(linesSummary.totalRemaining)}</span>
-            <span
-              className={
-                finance.isNegativeMargin
-                  ? 'text-[#F87171]'
-                  : finance.fotPercentOfContract > (finance.fotLimitPercent || 45)
-                  ? 'text-[#FBBF24]'
-                  : 'text-[#4ADE80]'
-              }
-            >
+          <div className="mt-1 flex items-baseline justify-between gap-2 font-mono text-sm font-semibold tabular-nums">
+            <span className="text-[#0F2936]">{formatCurrency(linesSummary.totalRemaining)}</span>
+            <span className={finance.isNegativeMargin ? 'text-[#E11D48]' : 'text-[#0D9488]'}>
               {finance.projectedMarginPercent.toFixed(1)}%
             </span>
           </div>
-          <div className="flex items-center justify-between font-mono text-[10px] tabular-nums text-[#A3A3A3]">
+          <div className="flex items-center justify-between font-mono text-[10px] tabular-nums text-[#547585]">
             <span>{linesSummary.remPct}% осталось</span>
             <span>{formatCurrency(finance.projectedMarginAmount)}</span>
           </div>
@@ -381,10 +415,10 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="border-b border-[#0A0A0A] bg-[#F4F4F4] p-5"
+          className="border-b border-[#DDF0F4] bg-[#EEF8FA] p-5"
         >
-          <div className="flex items-center justify-between border-b border-[#D4D4D4] pb-3">
-            <div className="text-xs font-bold text-[#0A0A0A]">
+          <div className="flex items-center justify-between border-b border-[#C5E6EC] pb-3">
+            <div className="text-xs font-bold text-[#0F2936]">
               {editingId ? 'Редактировать строку затрат' : 'Новая строка затрат по роли / совмещению'}
             </div>
             <button
@@ -393,7 +427,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                 setShowForm(false);
                 setEditingId(null);
               }}
-              className="text-[#525252] hover:text-[#0A0A0A]"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[#4C6D7C] hover:bg-white hover:text-[#0F2936]"
               aria-label="Закрыть форму"
             >
               <X className="h-4 w-4" />
@@ -402,13 +436,13 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
 
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+              <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                 Роль / статья затрат *
               </label>
               <select
                 value={role}
                 onChange={(e) => handleRoleChange(e.target.value as ProjectCostRole)}
-                className="h-9 w-full border border-[#0A0A0A] bg-white px-2.5 text-xs font-medium text-[#0A0A0A] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs font-medium text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
               >
                 {COST_ROLES.map((r) => (
                   <option key={r} value={r}>
@@ -419,7 +453,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
             </div>
 
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+              <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                 Исполнитель (можно совмещать роли) *
               </label>
               <input
@@ -429,7 +463,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                 value={assigneeName}
                 onChange={(e) => setAssigneeName(e.target.value)}
                 placeholder="Например: Алина, София, Вика..."
-                className="h-9 w-full border border-[#0A0A0A] bg-white px-3 text-xs text-[#0A0A0A] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
               />
               <datalist id="project-assignee-suggestions">
                 {existingAssignees.map((name) => (
@@ -439,13 +473,13 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
             </div>
 
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+              <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                 Формат расчёта
               </label>
               <select
                 value={payMode}
                 onChange={(e) => setPayMode(e.target.value as CostLinePayMode)}
-                className="h-9 w-full border border-[#0A0A0A] bg-white px-2.5 text-xs text-[#0A0A0A] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
               >
                 <option value="piecework">Сдельная / фикс за роль</option>
                 <option value="salary">Окладник (доля по м² или дням)</option>
@@ -455,13 +489,13 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
 
             {payMode === 'salary' ? (
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                   Окладник из справочника (опц.)
                 </label>
                 <select
                   value={memberId}
                   onChange={(e) => handleSelectSalariedMember(e.target.value)}
-                  className="h-9 w-full border border-[#D4D4D4] bg-white px-2.5 text-xs text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
+                  className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                 >
                   <option value="">Задать оклад вручную</option>
                   {salariedTeam.map((m) => (
@@ -473,7 +507,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
               </div>
             ) : (
               <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                   Бюджет (Всего), ₽ *
                 </label>
                 <input
@@ -483,7 +517,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                   required
                   value={budgetAmount}
                   onChange={(e) => setBudgetAmount(e.target.value)}
-                  className="h-9 w-full border border-[#0A0A0A] bg-white px-3 font-mono text-xs font-semibold tabular-nums text-[#0A0A0A] focus:outline-none"
+                  className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 font-mono text-xs font-semibold tabular-nums text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                 />
               </div>
             )}
@@ -491,7 +525,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
             {payMode === 'salary' && (
               <>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                  <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                     Оклад в месяц, ₽ *
                   </label>
                   <input
@@ -501,11 +535,11 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                     required
                     value={monthlySalary}
                     onChange={(e) => setMonthlySalary(e.target.value)}
-                    className="h-9 w-full border border-[#0A0A0A] bg-white px-3 font-mono text-xs tabular-nums text-[#0A0A0A]"
+                    className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 font-mono text-xs tabular-nums text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                  <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                     База списания оклада
                   </label>
                   <select
@@ -518,14 +552,14 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                         setWorkedUnits(String(project.areaSqm));
                       }
                     }}
-                    className="h-9 w-full border border-[#0A0A0A] bg-white px-2.5 text-xs text-[#0A0A0A]"
+                    className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                   >
                     <option value="days">По рабочим дням</option>
                     <option value="sqm">По отработанным м²</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                  <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                     Отработано на объекте ({salaryUnit === 'days' ? 'дней' : 'м²'})
                   </label>
                   <input
@@ -535,11 +569,11 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                     required
                     value={workedUnits}
                     onChange={(e) => setWorkedUnits(e.target.value)}
-                    className="h-9 w-full border border-[#0A0A0A] bg-white px-3 font-mono text-xs tabular-nums text-[#0A0A0A]"
+                    className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 font-mono text-xs tabular-nums text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+                  <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                     Месячная норма ({salaryUnit === 'days' ? 'дн./мес' : 'м²/мес'})
                   </label>
                   <input
@@ -549,14 +583,14 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                     required
                     value={monthlyCapacityUnits}
                     onChange={(e) => setMonthlyCapacityUnits(e.target.value)}
-                    className="h-9 w-full border border-[#0A0A0A] bg-white px-3 font-mono text-xs tabular-nums text-[#0A0A0A]"
+                    className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 font-mono text-xs tabular-nums text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
                   />
                 </div>
               </>
             )}
 
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+              <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                 Выплачено на сегодня, ₽
               </label>
               <input
@@ -565,12 +599,12 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                 step="500"
                 value={paidAmount}
                 onChange={(e) => setPaidAmount(e.target.value)}
-                className="h-9 w-full border border-[#D4D4D4] bg-white px-3 font-mono text-xs tabular-nums text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 font-mono text-xs tabular-nums text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
               />
             </div>
 
-            <div className={payMode === 'salary' ? 'sm:col-span-2 lg:col-span-3' : 'sm:col-span-2 lg:col-span-3'}>
-              <label className="mb-1 block text-[11px] font-medium text-[#525252]">
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label className="mb-1 block text-[11px] font-medium text-[#4C6D7C]">
                 Комментарий / объём работ
               </label>
               <input
@@ -578,41 +612,41 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Например: 3D-визуализация + правки, или 250 ₽/м² за РД"
-                className="h-9 w-full border border-[#D4D4D4] bg-white px-3 text-xs text-[#0A0A0A] focus:border-[#0A0A0A] focus:outline-none"
+                className="h-9 w-full rounded-xl border border-[#B5DFE8] bg-white px-3 text-xs text-[#0F2936] focus:border-[#0284C9] focus:outline-none"
               />
             </div>
           </div>
 
           {payMode === 'salary' && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border border-[#0A0A0A] bg-white px-3.5 py-2.5 text-xs">
-              <span className="text-[#525252]">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#C5E6EC] bg-white px-4 py-2.5 text-xs">
+              <span className="text-[#4C6D7C]">
                 Авто-списание доли оклада в себестоимость объекта:{' '}
-                <span className="font-mono text-[#0A0A0A]">
+                <span className="font-mono text-[#0F2936]">
                   {formatCurrency(Number(monthlySalary) || 0)} × ({workedUnits || 0} /{' '}
                   {monthlyCapacityUnits || 22}{' '}
                   {salaryUnit === 'days' ? 'дн.' : 'м²'})
                 </span>
               </span>
-              <span className="font-mono text-sm font-bold tabular-nums text-[#0A0A0A]">
+              <span className="font-mono text-sm font-bold tabular-nums text-[#0D9488]">
                 = {formatCurrency(previewSalaryBudget)}
               </span>
             </div>
           )}
 
-          <div className="mt-4 flex items-center justify-end gap-2 border-t border-[#D4D4D4] pt-3">
+          <div className="mt-4 flex items-center justify-end gap-2 border-t border-[#C5E6EC] pt-3">
             <button
               type="button"
               onClick={() => {
                 setShowForm(false);
                 setEditingId(null);
               }}
-              className="h-9 border border-[#0A0A0A] bg-white px-4 text-xs font-medium text-[#0A0A0A] hover:bg-white/60"
+              className="h-9 rounded-full border border-[#B5DFE8] bg-white px-4 text-xs font-medium text-[#0F2936] hover:border-[#0284C9] hover:text-[#0284C9]"
             >
               Отмена
             </button>
             <button
               type="submit"
-              className="flex h-9 items-center gap-1.5 bg-[#0A0A0A] px-5 text-xs font-semibold text-white hover:bg-[#262626]"
+              className="btn-pulse flex h-9 items-center gap-1.5 rounded-full px-5 text-xs font-semibold"
             >
               <Check className="h-3.5 w-3.5" />
               {editingId ? 'Сохранить строку' : 'Добавить в бюджет'}
@@ -625,7 +659,7 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-[#0A0A0A] bg-[#F4F4F4] text-[11px] font-semibold text-[#0A0A0A]">
+            <tr className="border-b border-[#DDF0F4] bg-[#EEF8FA] text-[11px] font-semibold text-[#4C6D7C]">
               <th className="px-5 py-3">Роль и исполнитель</th>
               <th className="px-4 py-3">Формат</th>
               <th className="px-4 py-3 text-right">Бюджет (Всего)</th>
@@ -634,10 +668,10 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
               <th className="px-5 py-3 text-right">Действия</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#D4D4D4] text-xs">
+          <tbody className="divide-y divide-[#E1F2F6] text-xs">
             {costLines.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-5 py-8 text-center text-[#525252]">
+                <td colSpan={6} className="px-5 py-8 text-center text-[#4C6D7C]">
                   Строки затрат команды и накладных ещё не добавлены. Нажмите «+ Добавить строку затрат».
                 </td>
               </tr>
@@ -655,15 +689,15 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                 const isSettled = remaining === 0;
 
                 return (
-                  <tr key={line.id} className="hover:bg-[#F4F4F4]">
+                  <tr key={line.id} className="transition-colors hover:bg-[#F4FBFD]">
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-[#0A0A0A]">{line.role}</span>
-                        <span className="text-[#D4D4D4]">·</span>
-                        <span className="font-medium text-[#0A0A0A]">{line.assigneeName}</span>
+                        <span className="font-bold text-[#0F2936]">{line.role}</span>
+                        <span className="text-[#B5DFE8]">·</span>
+                        <span className="font-medium text-[#0F2936]">{line.assigneeName}</span>
                         {isMultiRole && (
                           <span
-                            className="border border-[#0A0A0A] bg-[#F4F4F4] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#0A0A0A]"
+                            className="rounded-full border border-[#BAE6FD] bg-[#E0F2FE] px-2 py-0.5 font-mono text-[10px] font-semibold text-[#0284C9]"
                             title={`Сотрудник совмещает ${multiInfo!.count} роли на этом объекте (итого ${formatCurrency(multiInfo!.totalBudget)})`}
                           >
                             совмещение ×{multiInfo!.count}
@@ -671,14 +705,14 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                         )}
                       </div>
                       {line.note && (
-                        <div className="mt-0.5 text-[11px] text-[#525252]">{line.note}</div>
+                        <div className="mt-0.5 text-[11px] text-[#4C6D7C]">{line.note}</div>
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px] text-[#525252] whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-[11px] text-[#4C6D7C] whitespace-nowrap">
                       {line.payMode === 'salary' ? (
                         <div>
-                          <div className="font-semibold text-[#0A0A0A]">Окладник</div>
+                          <div className="font-semibold text-[#0F2936]">Окладник</div>
                           <div className="font-mono text-[10px] tabular-nums">
                             {formatNumber(line.workedUnits || 0)} /{' '}
                             {formatNumber(line.monthlyCapacityUnits || 22)}{' '}
@@ -687,21 +721,21 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                           </div>
                         </div>
                       ) : line.payMode === 'overhead' ? (
-                        <span className="font-medium text-[#525252]">Накладные</span>
+                        <span className="font-medium text-[#4C6D7C]">Накладные</span>
                       ) : (
-                        <span className="font-medium text-[#0A0A0A]">Сдельная</span>
+                        <span className="font-medium text-[#0F2936]">Сдельная</span>
                       )}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right font-mono font-bold tabular-nums text-[#0A0A0A] whitespace-nowrap">
+                    <td className="px-4 py-3.5 text-right font-mono font-bold tabular-nums text-[#0F2936] whitespace-nowrap">
                       {formatCurrency(effBudget)}
                     </td>
 
                     <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                      <div className="font-mono font-semibold tabular-nums text-[#15803D]">
+                      <div className="font-mono font-semibold tabular-nums text-[#0D9488]">
                         {formatCurrency(paid)}
                       </div>
-                      <div className="font-mono text-[10px] tabular-nums text-[#525252]">
+                      <div className="font-mono text-[10px] tabular-nums text-[#4C6D7C]">
                         {paidPct}%
                       </div>
                     </td>
@@ -709,26 +743,26 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                     <td className="px-4 py-3.5 text-right whitespace-nowrap">
                       <div
                         className={`font-mono font-bold tabular-nums ${
-                          remaining > 0 ? 'text-[#0A0A0A]' : 'text-[#15803D]'
+                          remaining > 0 ? 'text-[#0F2936]' : 'text-[#0D9488]'
                         }`}
                       >
                         {formatCurrency(remaining)}
                       </div>
-                      <div className="font-mono text-[10px] tabular-nums text-[#525252]">
+                      <div className="font-mono text-[10px] tabular-nums text-[#4C6D7C]">
                         {remPct}%
                       </div>
                     </td>
 
                     <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex items-center justify-end gap-1.5">
                         {effBudget > 0 && (
                           <button
                             type="button"
                             onClick={() => handleMarkFullyPaid(line)}
-                            className={`flex h-7 items-center gap-1 border px-2 text-[10px] font-semibold transition-colors whitespace-nowrap ${
+                            className={`flex h-7 items-center gap-1 rounded-full border px-2.5 text-[10px] font-semibold transition-all whitespace-nowrap ${
                               isSettled
-                                ? 'border-[#15803D] bg-[#F0FDF4] text-[#15803D] hover:bg-white'
-                                : 'border-[#0A0A0A] bg-white text-[#0A0A0A] hover:bg-[#0A0A0A] hover:text-white'
+                                ? 'border-[#99F6E4] bg-[#F0FDFA] text-[#0D9488] hover:bg-white'
+                                : 'border-[#B5DFE8] bg-white text-[#0F2936] hover:border-[#0D9488] hover:bg-[#0D9488] hover:text-white'
                             }`}
                             title={
                               isSettled
@@ -736,25 +770,25 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
                                 : 'Отметить как выплачено 100%'
                             }
                           >
-                            <CheckCheck className="h-3 w-3" />
+                            <CheckCheck className="h-3 w-3" strokeWidth={1.6} />
                             {isSettled ? 'Оплачено' : 'Выплатить'}
                           </button>
                         )}
                         <button
                           type="button"
                           onClick={() => startEdit(line)}
-                          className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#0A0A0A] hover:border-[#0A0A0A]"
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-[#0EA5E9]/18 bg-white text-[#547585] hover:border-[#0284C7] hover:text-[#0284C7]"
                           aria-label="Редактировать строку"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <Pencil className="h-3 w-3" strokeWidth={1.6} />
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteLine(line.id)}
-                          className="flex h-7 w-7 items-center justify-center border border-[#D4D4D4] bg-white text-[#525252] hover:border-[#DC2626] hover:text-[#DC2626]"
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-[#0EA5E9]/18 bg-white text-[#547585] hover:border-[#FDA4AF] hover:bg-[#FFF1F2] hover:text-[#E11D48]"
                           aria-label="Удалить строку"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-3 w-3" strokeWidth={1.6} />
                         </button>
                       </div>
                     </td>
@@ -765,14 +799,14 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
           </tbody>
           {costLines.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-[#0A0A0A] bg-[#F4F4F4] text-xs font-bold text-[#0A0A0A]">
+              <tr className="border-t border-[#C5E6EC] bg-[#EEF8FA] text-xs font-bold text-[#0F2936]">
                 <td colSpan={2} className="px-5 py-3.5">
                   Итого по команде и накладным ({costLines.length} поз.)
                 </td>
                 <td className="px-4 py-3.5 text-right font-mono tabular-nums">
                   {formatCurrency(linesSummary.totalBudget)}
                 </td>
-                <td className="px-4 py-3.5 text-right font-mono tabular-nums text-[#15803D]">
+                <td className="px-4 py-3.5 text-right font-mono tabular-nums text-[#0D9488]">
                   {formatCurrency(linesSummary.totalPaid)} ({linesSummary.paidPct}%)
                 </td>
                 <td className="px-4 py-3.5 text-right font-mono tabular-nums">
@@ -787,18 +821,18 @@ export const ProjectCostLinesSection: React.FC<ProjectCostLinesSectionProps> = (
 
       {/* Multi-role Consolidation Summary Strip */}
       {multiRoleSpecialists.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 border-t border-[#D4D4D4] bg-white px-5 py-3 text-xs">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#0A0A0A]">
-            <Users className="h-3.5 w-3.5" />
+        <div className="flex flex-wrap items-center gap-3 border-t border-[#DDF0F4] bg-[#F4FBFD] px-5 py-3 text-xs">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#0F2936]">
+            <Users className="h-3.5 w-3.5 text-[#0284C9]" />
             Сводка по совмещению ролей:
           </span>
           {multiRoleSpecialists.map((spec) => (
             <span
               key={spec.displayName}
-              className="border border-[#0A0A0A] bg-[#F4F4F4] px-2.5 py-1 font-mono text-[11px] tabular-nums text-[#0A0A0A]"
+              className="rounded-full border border-[#BAE6FD] bg-white px-3 py-1 font-mono text-[11px] tabular-nums text-[#0F2936]"
             >
               {spec.displayName} ({spec.count} роли) —{' '}
-              <strong>{formatCurrency(spec.totalBudget)}</strong>
+              <strong className="text-[#0284C9]">{formatCurrency(spec.totalBudget)}</strong>
             </span>
           ))}
         </div>

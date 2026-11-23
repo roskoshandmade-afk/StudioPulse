@@ -5,14 +5,16 @@ import { DataBackupModal } from './components/DataBackupModal';
 import { Header, WorkspaceTab } from './components/Header';
 import { ProjectDetailView } from './components/ProjectDetailView';
 import { ProjectModal } from './components/ProjectModal';
+import { ProposalBuilderView } from './components/ProposalBuilderView';
 import { StudioPulseView } from './components/StudioPulseView';
 import { SupabaseSettingsModal } from './components/SupabaseSettingsModal';
 import { TeamView } from './components/TeamView';
 import { Toast, ToastMessage } from './components/Toast';
 import { WorklogSection } from './components/WorklogSection';
-import { createDemoData, createEmptyData } from './data/demoData';
+import { createDemoData, createEmptyData, createId } from './data/demoData';
 import {
   AppData,
+  CommercialProposal,
   DirectExpense,
   Project,
   ProjectStatus,
@@ -21,6 +23,12 @@ import {
   UserRole,
   WorklogEntry,
 } from './types';
+import {
+  convertProposalToProject,
+  createNewProposalDraft,
+  createSampleProposal,
+  generateNextProposalNumber,
+} from './utils/proposals';
 import {
   buildClientShareUrl,
   ClientSnapshot,
@@ -61,6 +69,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>('projects');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     urlClientState.projectId
+  );
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(
+    () => loadAppData().proposals?.[0]?.id || null
   );
 
   // Offline-First synchronization refs & mutex
@@ -784,6 +795,120 @@ export default function App() {
     notify('Расход удалён');
   };
 
+  // Commercial Proposals (Конструктор КП) CRUD + 1-click conversion to Project
+  const handleCreateProposal = () => {
+    const currentProposals = latestDataRef.current.proposals || [];
+    const draft = createNewProposalDraft(currentProposals);
+    applyLocalChange((prev) => ({
+      ...prev,
+      proposals: [draft, ...(prev.proposals || [])],
+    }));
+    setSelectedProposalId(draft.id);
+    setSelectedProjectId(null);
+    setActiveTab('proposals');
+    notify(`Создан черновик ${draft.number}`);
+  };
+
+  const handleDuplicateProposal = (source: CommercialProposal) => {
+    const currentProposals = latestDataRef.current.proposals || [];
+    const nextNumber = generateNextProposalNumber(currentProposals);
+    const copy: CommercialProposal = {
+      ...source,
+      id: createId('kp'),
+      number: nextNumber,
+      status: 'Черновик',
+      convertedProjectId: undefined,
+      updatedAt: new Date().toISOString(),
+      deliverables: [...source.deliverables],
+      stageWorkingDays: [...source.stageWorkingDays],
+      extraOptions: source.extraOptions.map((o) => ({ ...o })),
+    };
+    applyLocalChange((prev) => ({
+      ...prev,
+      proposals: [copy, ...(prev.proposals || [])],
+    }));
+    setSelectedProposalId(copy.id);
+    notify(`Создана копия ${copy.number}`);
+  };
+
+  const handleUpdateProposal = (updated: CommercialProposal) => {
+    applyLocalChange((prev) => ({
+      ...prev,
+      proposals: (prev.proposals || []).map((p) => (p.id === updated.id ? updated : p)),
+    }));
+  };
+
+  const requestDeleteProposal = (proposal: CommercialProposal) => {
+    setConfirmState({
+      open: true,
+      title: 'Удалить коммерческое предложение?',
+      description: `Документ ${proposal.number} (${proposal.objectName || 'без названия'}) будет удалён из истории КП.`,
+      confirmLabel: 'Удалить КП',
+      danger: true,
+      onConfirm: () => {
+        applyLocalChange((prev) => {
+          const nextList = (prev.proposals || []).filter((p) => p.id !== proposal.id);
+          if (selectedProposalId === proposal.id) {
+            setSelectedProposalId(nextList[0]?.id || null);
+          }
+          return {
+            ...prev,
+            proposals: nextList,
+          };
+        });
+        setConfirmState((s) => ({ ...s, open: false }));
+        notify(`КП ${proposal.number} удалено`);
+      },
+    });
+  };
+
+  const handleConvertProposalToProject = (proposal: CommercialProposal) => {
+    const currentSnapshot = latestDataRef.current;
+    const currentProposal =
+      (currentSnapshot.proposals || []).find((p) => p.id === proposal.id) || proposal;
+
+    if (
+      currentProposal.convertedProjectId &&
+      currentSnapshot.projects.some((pr) => pr.id === currentProposal.convertedProjectId)
+    ) {
+      notify('Объект по этому КП уже создан в Пульсе студии');
+      return;
+    }
+
+    const nextProject = convertProposalToProject(
+      currentProposal,
+      currentSnapshot.team,
+      currentSnapshot.settings.defaultFotLimitPercent
+    );
+
+    applyLocalChange((prev) => {
+      const latestProp = (prev.proposals || []).find((p) => p.id === currentProposal.id);
+      if (
+        latestProp?.convertedProjectId &&
+        prev.projects.some((pr) => pr.id === latestProp.convertedProjectId)
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        projects: [nextProject, ...prev.projects],
+        proposals: (prev.proposals || []).map((p) =>
+          p.id === currentProposal.id
+            ? {
+                ...currentProposal,
+                status: 'Согласовано',
+                convertedProjectId: nextProject.id,
+                updatedAt: new Date().toISOString(),
+              }
+            : p
+        ),
+      };
+    });
+
+    notify(`КП согласовано · Создан объект «${nextProject.name}»`);
+  };
+
   // Locked Client View (opened via copied link ?view=client&project=...)
   if (urlClientState.isLockedClient) {
     return (
@@ -800,7 +925,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#0A0A0A]">
+    <div className="min-h-screen text-[#0F2936]">
       <Header
         role={role}
         activeTab={activeTab}
@@ -847,18 +972,19 @@ export default function App() {
           onExportPdf={handleExportPdf}
         />
       ) : (
-        <main className="mx-auto max-w-[1440px] px-4 py-7 sm:px-6 sm:py-9 lg:px-8">
+        <main className="mx-auto max-w-[1440px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
           {/* Active Role Context Line */}
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-[#D4D4D4] pb-3 text-xs text-[#525252]">
-            <div>
-              Режим:{' '}
-              <span className="font-semibold text-[#0A0A0A]">
+          <div className="no-print mb-7 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#0EA5E9]/16 bg-white/75 px-4 py-2.5 text-xs text-[#547585] backdrop-blur-md">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#0D9488] to-[#0EA5E9]" />
+              <span>Режим:</span>
+              <span className="font-semibold text-[#0F2936]">
                 {role === 'director'
                   ? 'Руководитель (полный финансовый и операционный доступ)'
                   : 'Помощник (полный операционный и финансовый доступ)'}
               </span>
             </div>
-            <div className="font-mono text-[11px] font-medium tabular-nums text-[#0A0A0A]">
+            <div className="rounded-full border border-[#0EA5E9]/18 bg-white/90 px-3 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-[#0F2936]">
               Лимит ФОТ: {data.settings.defaultFotLimitPercent}%
             </div>
           </div>
@@ -891,6 +1017,7 @@ export default function App() {
                 setEditingProject(null);
                 setProjectModalOpen(true);
               }}
+              onCreateProposal={handleCreateProposal}
               onEditProject={(p) => {
                 setEditingProject(p);
                 setProjectModalOpen(true);
@@ -900,6 +1027,23 @@ export default function App() {
               onCopyClientLink={(p) => handleCopyClientLink(p)}
               onUpdateProjectStatus={handleQuickStatusChange}
               onOpenBackup={() => setBackupModalOpen(true)}
+            />
+          ) : activeTab === 'proposals' ? (
+            <ProposalBuilderView
+              proposals={data.proposals || []}
+              selectedProposalId={selectedProposalId}
+              projects={data.projects}
+              onSelectProposal={(id) => setSelectedProposalId(id)}
+              onCreateProposal={handleCreateProposal}
+              onDuplicateProposal={handleDuplicateProposal}
+              onUpdateProposal={handleUpdateProposal}
+              onDeleteProposal={requestDeleteProposal}
+              onConvertToProject={handleConvertProposalToProject}
+              onOpenProject={(projectId) => {
+                setSelectedProjectId(projectId);
+                setActiveTab('projects');
+              }}
+              onNotify={notify}
             />
           ) : activeTab === 'worklog' ? (
             <WorklogSection
@@ -948,12 +1092,15 @@ export default function App() {
           setSelectedProjectId(null);
         }}
         onResetEmpty={() => {
-          applyLocalChange(createEmptyData());
+          applyLocalChange({ ...createEmptyData(), proposals: [] });
           setSelectedProjectId(null);
+          setSelectedProposalId(null);
         }}
         onRestoreDemo={() => {
-          applyLocalChange(createDemoData());
+          const sample = createSampleProposal();
+          applyLocalChange({ ...createDemoData(), proposals: [sample] });
           setSelectedProjectId(null);
+          setSelectedProposalId(sample.id);
         }}
         onNotify={notify}
       />
@@ -984,7 +1131,9 @@ export default function App() {
         onCancel={() => setConfirmState((s) => ({ ...s, open: false }))}
       />
 
-      <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <div className="no-print">
+        <Toast toast={toast} onDismiss={() => setToast(null)} />
+      </div>
     </div>
   );
 }

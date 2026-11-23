@@ -1,10 +1,10 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-declare const __LIMUR_SUPABASE_URL__: string | undefined;
-declare const __LIMUR_SUPABASE_ANON_KEY__: string | undefined;
+declare const __PULSE_SUPABASE_URL__: string | undefined;
+declare const __PULSE_SUPABASE_ANON_KEY__: string | undefined;
 
 export const DEFAULT_SANDBOX_SUPABASE_URL = 'https://vrnyoyezgtbijnwlsflc.supabase.co';
-export const SUPABASE_CONFIG_STORAGE_KEY = 'limur_supabase_config_sandbox_v1';
+export const SUPABASE_CONFIG_STORAGE_KEY = 'studio_pulse_supabase_config_sandbox_v1';
 
 export type SupabaseConfigSource = 'custom' | 'env' | 'unconfigured';
 
@@ -70,13 +70,13 @@ export function getBuildSupabaseConfig(): {
 } {
   const rawEnvUrl =
     readNonEmpty(import.meta.env.VITE_SUPABASE_URL) ||
-    readNonEmpty(typeof __LIMUR_SUPABASE_URL__ !== 'undefined' ? __LIMUR_SUPABASE_URL__ : '') ||
+    readNonEmpty(typeof __PULSE_SUPABASE_URL__ !== 'undefined' ? __PULSE_SUPABASE_URL__ : '') ||
     DEFAULT_SANDBOX_SUPABASE_URL;
   const envUrl = normalizeSupabaseUrl(rawEnvUrl) || DEFAULT_SANDBOX_SUPABASE_URL;
   const envKey =
     readNonEmpty(import.meta.env.VITE_SUPABASE_ANON_KEY) ||
     readNonEmpty(
-      typeof __LIMUR_SUPABASE_ANON_KEY__ !== 'undefined' ? __LIMUR_SUPABASE_ANON_KEY__ : ''
+      typeof __PULSE_SUPABASE_ANON_KEY__ !== 'undefined' ? __PULSE_SUPABASE_ANON_KEY__ : ''
     );
 
   if (envUrl && envKey) {
@@ -115,7 +115,7 @@ export function createSupabaseClientForConfig(
     const cleanKey = readNonEmpty(anonKey);
 
     if (!cleanUrl || !cleanKey) {
-      console.warn('[LIMUR STUDIO OS][Supabase] Missing Project URL or Anon Key — running in local offline mode.', {
+      console.warn('[Студия Пульс][Supabase] Missing Project URL or Anon Key — running in local offline mode.', {
         url: cleanUrl || null,
         hasAnonKey: Boolean(cleanKey),
       });
@@ -140,7 +140,7 @@ export function createSupabaseClientForConfig(
     });
   } catch (err) {
     console.error(
-      '[LIMUR STUDIO OS][Supabase] Failed to initialize client, falling back to localStorage:',
+      '[Студия Пульс][Supabase] Failed to initialize client, falling back to localStorage:',
       err
     );
     return null;
@@ -168,7 +168,7 @@ export function saveCustomSupabaseConfig(url: string, anonKey: string): Supabase
       JSON.stringify({ url: cleanUrl, anonKey: cleanKey })
     );
   } catch (err) {
-    console.error('[LIMUR STUDIO OS][Supabase] Failed to persist custom config in localStorage:', err);
+    console.error('[Студия Пульс][Supabase] Failed to persist custom config in localStorage:', err);
   }
   return reinitializeSupabaseClient();
 }

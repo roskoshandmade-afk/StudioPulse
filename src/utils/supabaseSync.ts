@@ -111,7 +111,7 @@ export function formatSupabaseError(
 
 function logSupabaseError(operation: string, formatted: SupabaseSyncError, rawError: unknown) {
   const cfg = getActiveSupabaseConfig();
-  console.error(`[LIMUR STUDIO OS][Supabase][${operation}] Request failed`, {
+  console.error(`[Студия Пульс][Supabase][${operation}] Request failed`, {
     url: cfg.url,
     configSource: cfg.source,
     code: formatted.code || 'NONE',
@@ -155,16 +155,17 @@ function normalizePayload(raw: unknown): AppData | null {
             studioName:
               typeof candidate.settings.studioName === 'string' && candidate.settings.studioName.trim()
                 ? candidate.settings.studioName
-                : 'LIMUR STUDIO OS',
+                : 'Студия Пульс',
           }
         : {
             defaultFotLimitPercent: 45,
-            studioName: 'LIMUR STUDIO OS',
+            studioName: 'Студия Пульс',
           },
     team: candidate.team,
     projects: candidate.projects,
     worklogs: Array.isArray(candidate.worklogs) ? candidate.worklogs : [],
     expenses: Array.isArray(candidate.expenses) ? candidate.expenses : [],
+    proposals: Array.isArray(candidate.proposals) ? candidate.proposals : [],
   };
 }
 
@@ -334,7 +335,7 @@ export async function testSupabaseConnection(
         };
       }
       const formatted = formatSupabaseError(error, status);
-      console.error('[LIMUR STUDIO OS][Supabase][testConnection] Failed:', {
+      console.error('[Студия Пульс][Supabase][testConnection] Failed:', {
         url,
         code: formatted.code || 'NONE',
         status: formatted.status ?? 'N/A',
@@ -354,7 +355,7 @@ export async function testSupabaseConnection(
   } catch (err) {
     const latencyMs = Math.round(performance.now() - startedAt);
     const formatted = formatSupabaseError(err);
-    console.error('[LIMUR STUDIO OS][Supabase][testConnection] Network exception:', {
+    console.error('[Студия Пульс][Supabase][testConnection] Network exception:', {
       url,
       message: formatted.message,
       rawError: err,
@@ -396,7 +397,7 @@ export function subscribeStudioState(
               onRemoteData(normalized);
             }
           } catch (err) {
-            console.error('[LIMUR STUDIO OS][Supabase][Realtime] Malformed payload:', err);
+            console.error('[Студия Пульс][Supabase][Realtime] Malformed payload:', err);
           }
         }
       )
@@ -404,7 +405,7 @@ export function subscribeStudioState(
         if (status === 'SUBSCRIBED') {
           onRealtimeStatus?.('subscribed');
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('[LIMUR STUDIO OS][Supabase][Realtime] Subscription fallback to REST:', {
+          console.warn('[Студия Пульс][Supabase][Realtime] Subscription fallback to REST:', {
             status,
             error: err || 'Check Realtime publication (supabase_realtime) and RLS SELECT policy on studio_state',
           });
@@ -414,7 +415,7 @@ export function subscribeStudioState(
         }
       });
   } catch (err) {
-    console.error('[LIMUR STUDIO OS][Supabase][Realtime] Failed to subscribe:', err);
+    console.error('[Студия Пульс][Supabase][Realtime] Failed to subscribe:', err);
     onRealtimeStatus?.('error', err);
     return () => {};
   }

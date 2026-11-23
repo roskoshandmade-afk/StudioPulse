@@ -126,19 +126,19 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
   // =========================================================================
   // 1. ARCHITECTURAL MASTHEAD
   // =========================================================================
-  doc.setDrawColor(15, 15, 15);
-  doc.setLineWidth(0.8);
+  doc.setDrawColor(13, 148, 136);
+  doc.setLineWidth(0.9);
   doc.line(marginX, y, marginX + contentW, y);
   y += 6;
 
   doc.setFont('ArchSans', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(15, 15, 15);
-  doc.text('LIMUR STUDIO', marginX, y);
+  doc.setFontSize(10.5);
+  doc.setTextColor(15, 41, 54);
+  doc.text('СТУДИЯ ПУЛЬС', marginX, y);
 
   doc.setFont('ArchMono', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(82, 82, 82);
+  doc.setTextColor(76, 109, 124);
   doc.text(`ФИНАНСОВАЯ СВОДКА  ·  ${todayFormatted}`, marginX + contentW, y, {
     align: 'right',
   });
@@ -569,14 +569,14 @@ export async function exportProjectFinancialPdf(project: ExportableProject): Pro
 
     doc.setFont('ArchSans', 'normal');
     doc.setFontSize(7.5);
-    doc.setTextColor(115, 115, 115);
-    doc.text(`LIMUR STUDIO  ·  Отчёт для заказчика от ${todayFormatted}`, marginX, footerY);
+    doc.setTextColor(76, 109, 124);
+    doc.text(`Студия Пульс  ·  Отчёт для заказчика от ${todayFormatted}`, marginX, footerY);
 
     doc.setFont('ArchMono', 'normal');
     doc.setFontSize(7.5);
     doc.text(`Стр. ${p} / ${totalPages}`, marginX + contentW, footerY, { align: 'right' });
   }
 
-  const fileName = `LIMUR_Отчет_${sanitizeFileName(project.name)}_${todayIso}.pdf`;
+  const fileName = `СтудияПульс_Отчет_${sanitizeFileName(project.name)}_${todayIso}.pdf`;
   doc.save(fileName);
 }

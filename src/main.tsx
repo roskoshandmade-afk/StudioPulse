@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { LogoPulse } from './components/LogoPulse';
 import { STORAGE_KEY, SYNC_META_KEY } from './utils/storage';
 
 interface ErrorBoundaryState {
@@ -28,20 +29,18 @@ class AppErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-white p-6 text-[#0A0A0A]">
-          <div className="w-full max-w-md border border-[#0A0A0A] bg-white p-6">
-            <div className="text-xs font-semibold tracking-[0.14em] text-[#0A0A0A]">
-              LIMUR STUDIO OS
-            </div>
-            <h1 className="mt-3 text-lg font-semibold">Ошибка отображения</h1>
-            <p className="mt-2 text-xs leading-relaxed text-[#525252]">
+        <div className="flex min-h-screen items-center justify-center p-6 text-[#0F2936]">
+          <div className="bento-card w-full max-w-md p-6">
+            <LogoPulse />
+            <h1 className="mt-5 text-lg font-bold text-[#0F2936]">Ошибка отображения</h1>
+            <p className="mt-2 text-xs leading-relaxed text-[#4C6D7C]">
               {this.state.message}
             </p>
-            <div className="mt-5 flex gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="bg-[#0A0A0A] px-4 py-2 text-xs font-medium text-white"
+                className="btn-pulse rounded-full px-4 py-2 text-xs font-semibold"
               >
                 Перезагрузить
               </button>
@@ -56,7 +55,7 @@ class AppErrorBoundary extends React.Component<
                   }
                   window.location.reload();
                 }}
-                className="border border-[#0A0A0A] bg-white px-4 py-2 text-xs font-medium text-[#0A0A0A]"
+                className="rounded-full border border-[#C5E6EC] bg-white px-4 py-2 text-xs font-semibold text-[#0F2936] transition-colors hover:border-[#0D9488] hover:bg-[#F0FDFA]"
               >
                 Сбросить локальный кэш
               </button>

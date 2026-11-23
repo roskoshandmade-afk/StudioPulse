@@ -1,0 +1,17 @@
+{
+  "name": "Студия Пульс",
+  "short_name": "Пульс",
+  "description": "Студия Пульс — архитектура и дизайн интерьеров: управление дизайн-проектами, сроками и финансами.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#F4FAFC",
+  "theme_color": "#0D9488",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

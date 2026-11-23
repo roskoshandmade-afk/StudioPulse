@@ -139,6 +139,57 @@ export interface DirectExpense {
   comment: string;
 }
 
+export type ProposalStatus = 'Черновик' | 'Отправлено клиенту' | 'Согласовано';
+
+export type ProposalObjectType = 'Жилой интерьер' | 'Коммерческое помещение / Офис';
+
+export type ProposalTariffKey = 'planning' | 'working' | 'full';
+
+export type ProposalDiscountType = 'percent' | 'fixed';
+
+export type ProposalPaymentTemplate = '3-stage-30-50-20' | '2-stage-50-50';
+
+export interface ProposalExtraOption {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  enabled: boolean;
+}
+
+export interface CommercialProposal {
+  id: string;
+  number: string;
+  createdAt: string; // YYYY-MM-DD
+  updatedAt: string; // ISO timestamp
+  status: ProposalStatus;
+  clientName: string;
+  clientContact: string;
+  city: string;
+  objectName: string;
+  objectType: ProposalObjectType;
+  areaSqm: number;
+  measurementLink: string;
+  tariffKey: ProposalTariffKey;
+  ratePerSqm: number;
+  deliverables: string[];
+  discountType: ProposalDiscountType;
+  discountValue: number;
+  extraOptions: ProposalExtraOption[];
+  deductMeasurementAdvance: boolean;
+  measurementAdvanceAmount: number;
+  paymentTemplate: ProposalPaymentTemplate;
+  stageWorkingDays: number[];
+  revisionRounds: number;
+  albumFormat: string;
+  validityDays: number;
+  studioPhone: string;
+  studioEmail: string;
+  directorName: string;
+  extraNotes: string;
+  convertedProjectId?: string;
+}
+
 export interface StudioSettings {
   defaultFotLimitPercent: number;
   studioName: string;
@@ -151,6 +202,7 @@ export interface AppData {
   projects: Project[];
   worklogs: WorklogEntry[];
   expenses: DirectExpense[];
+  proposals?: CommercialProposal[];
 }
 
 export interface SalaryAllocationDetail {

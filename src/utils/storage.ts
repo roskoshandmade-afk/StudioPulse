@@ -1,8 +1,9 @@
 import { createDemoData } from '../data/demoData';
 import { AppData } from '../types';
+import { createSampleProposal } from './proposals';
 
-export const STORAGE_KEY = 'limur_studio_os_sandbox_data_v1';
-export const SYNC_META_KEY = 'limur_studio_os_sandbox_sync_meta_v1';
+export const STORAGE_KEY = 'studio_pulse_sandbox_data_v1';
+export const SYNC_META_KEY = 'studio_pulse_sandbox_sync_meta_v1';
 
 export interface LocalSyncMeta {
   localUpdatedAt: number;
@@ -58,7 +59,10 @@ export function loadAppData(): AppData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const demo = createDemoData();
+      const demo: AppData = {
+        ...createDemoData(),
+        proposals: [createSampleProposal()],
+      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
       return demo;
     }
@@ -70,7 +74,10 @@ export function loadAppData(): AppData {
       !Array.isArray(parsed.worklogs) ||
       !Array.isArray(parsed.expenses)
     ) {
-      const demo = createDemoData();
+      const demo: AppData = {
+        ...createDemoData(),
+        proposals: [createSampleProposal()],
+      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
       return demo;
     }
@@ -83,24 +90,37 @@ export function loadAppData(): AppData {
       parsed.projects.length === 1 &&
       parsed.projects[0]?.id === 'proj_demo_presnya';
     if (isUntouchedLegacyDemo) {
-      const demo = createDemoData();
+      const demo: AppData = {
+        ...createDemoData(),
+        proposals: [createSampleProposal()],
+      };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
       return demo;
     }
+
+    const existingProposals = Array.isArray(parsed.proposals)
+      ? parsed.proposals
+      : parsed.projects.some((p) => p.isDemo)
+      ? [createSampleProposal()]
+      : [];
 
     return {
       version: parsed.version || 2,
       settings: parsed.settings || {
         defaultFotLimitPercent: 45,
-        studioName: 'LIMUR STUDIO OS',
+        studioName: 'Студия Пульс',
       },
       team: parsed.team,
       projects: parsed.projects,
       worklogs: parsed.worklogs,
       expenses: parsed.expenses,
+      proposals: existingProposals,
     };
   } catch {
-    return createDemoData();
+    return {
+      ...createDemoData(),
+      proposals: [createSampleProposal()],
+    };
   }
 }
 
@@ -167,7 +187,7 @@ export function exportDataToJson(data: AppData): void {
   const link = document.createElement('a');
   const stamp = new Date().toISOString().slice(0, 10);
   link.href = url;
-  link.download = `limur-studio-os-backup-${stamp}.json`;
+  link.download = `studio-pulse-backup-${stamp}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -189,12 +209,13 @@ export function parseImportedJson(rawText: string): { ok: true; data: AppData } 
         version: parsed.version || 1,
         settings: parsed.settings || {
           defaultFotLimitPercent: 40,
-          studioName: 'LIMUR STUDIO OS',
+          studioName: 'Студия Пульс',
         },
         team: parsed.team,
         projects: parsed.projects,
         worklogs: Array.isArray(parsed.worklogs) ? parsed.worklogs : [],
         expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
+        proposals: Array.isArray(parsed.proposals) ? parsed.proposals : [],
       },
     };
   } catch {

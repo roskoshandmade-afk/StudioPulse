@@ -1,52 +1,173 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-sans: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Inter", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {
   html {
     font-family: var(--font-sans);
-    background-color: #FFFFFF;
-    color: #0A0A0A;
+    background: linear-gradient(135deg, #F4FAFC 0%, #E8F6F8 100%);
+    background-attachment: fixed;
+    color: #0F2936;
+    min-height: 100%;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    background-color: #FFFFFF;
-    color: #0A0A0A;
+    background: linear-gradient(135deg, #F4FAFC 0%, #E8F6F8 100%);
+    background-attachment: fixed;
+    color: #0F2936;
+    min-height: 100vh;
   }
 
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Architectural precision scrollbars */
+  /* Refined pastel-teal scrollbars */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 7px;
+    height: 7px;
   }
   ::-webkit-scrollbar-track {
-    background: #F4F4F4;
+    background: #EAF6F9;
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb {
-    background: #A3A3A3;
+    background: rgba(14, 165, 233, 0.28);
+    border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #0A0A0A;
+    background: #0D9488;
   }
 }
 
-/* High-contrast architectural diagonal hatch for Gantt Plan layer & Planned Budget bars */
+/* Modern European Bento Frosted Glass Card */
+.bento-card {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(14, 165, 233, 0.16);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px -10px rgba(15, 76, 92, 0.08);
+}
+
+/* Light Designer Pastel-Teal Highlight Card (Balance / Summary — no heavy dark fill) */
+.bento-card-balance {
+  background: linear-gradient(
+    135deg,
+    rgba(240, 253, 250, 0.94) 0%,
+    rgba(232, 250, 252, 0.92) 52%,
+    rgba(224, 242, 254, 0.92) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(13, 148, 136, 0.24);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px -10px rgba(13, 148, 136, 0.14);
+}
+
+/* Soft Rose-Peach Risk / Critical Accent Card */
+.bento-card-risk {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 241, 242, 0.92) 0%,
+    rgba(255, 247, 237, 0.88) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(244, 63, 94, 0.22);
+  border-left: 4px solid #F43F5E;
+  border-radius: 22px;
+  box-shadow: 0 10px 30px -10px rgba(225, 29, 72, 0.1);
+}
+
+/* Primary aquamarine-sky gradient capsule button */
+.btn-pulse {
+  background: linear-gradient(135deg, #0D9488 0%, #0EA5E9 100%);
+  color: #FFFFFF;
+  box-shadow: 0 8px 20px -6px rgba(14, 165, 233, 0.34);
+  transition: filter 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.btn-pulse:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow: 0 10px 24px -6px rgba(13, 148, 136, 0.38);
+}
+
+/* Crisp azure diagonal hatch for Gantt Plan layer & Planned Budget bars */
 .gantt-plan-hatch {
-  background-color: #FFFFFF;
+  background-color: #EFF8FC;
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
     transparent 3px,
-    rgba(10, 10, 10, 0.24) 3px,
-    rgba(10, 10, 10, 0.24) 4px
+    rgba(2, 132, 199, 0.26) 3px,
+    rgba(2, 132, 199, 0.26) 4.5px
   );
 }
+
+/* Pristine A4 Print Stylesheet for Commercial Proposals (КП) */
+@page {
+  size: A4 portrait;
+  margin: 12mm 14mm;
+}
+
+@media print {
+  html,
+  body {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #0F2936 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #proposal-print-sheet {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #FFFFFF !important;
+  }
+
+  .print-avoid-break,
+  #proposal-print-sheet tr,
+  #proposal-print-sheet section,
+  #proposal-print-sheet .print-section {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  #proposal-print-sheet table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  #proposal-print-sheet thead {
+    display: table-header-group;
+  }
+}
+
